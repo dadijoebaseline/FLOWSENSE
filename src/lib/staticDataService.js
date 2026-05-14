@@ -1,9 +1,6 @@
 import { detectAnomaliesWithHistory, parseGeoJSON } from './anomalyDetection';
 
 const AVAILABLE_DATASETS = [
-  { id: '2024-01', name: 'January 2024', month_label: '2024-01', file: '2024-01.geojson' },
-  { id: '2024-02', name: 'February 2024', month_label: '2024-02', file: '2024-02.geojson' },
-  { id: '2024-03', name: 'March 2024', month_label: '2024-03', file: '2024-03.geojson' },
   { id: '2026-03', name: 'March 2026', month_label: '2026-03', file: '2026-03.geojson' },
   { id: '2026-04', name: 'April 2026', month_label: '2026-04', file: '2026-04.geojson' },
   { id: '2026-05', name: 'May 2026', month_label: '2026-05', file: '2026-05.geojson' },
