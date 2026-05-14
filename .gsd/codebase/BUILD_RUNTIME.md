@@ -1,12 +1,13 @@
 # BUILD & RUNTIME
 
-**Analysis Date:** 2026-05-14
+**Analysis Date:** 2026-05-14 (updated)
 
 Dev & build commands (from `package.json`)
 - Install: `npm install`
 - Dev server: `npm run dev` → `vite` (default host `http://localhost:5173`)
 - Build: `npm run build` → `vite build` (output to `dist/`)
 - Preview: `npm run preview` → `vite preview`
+- Tests: `npm test` → `vitest --run`
 - Lint: `npm run lint`
 
 Windows PowerShell example
@@ -14,23 +15,24 @@ Windows PowerShell example
 - npm run dev
 
 Serving `dist/`
-- Static hosting recommended: Vercel, Netlify, GitHub Pages. `dist/` is present in repo; to serve locally:
-  - `npx serve dist` (install `serve` globally first) or use `npm run preview` which serves built assets.
+- Static hosting recommended: Vercel, Netlify, GitHub Pages. To serve locally use `npm run preview`.
+
+Vercel (production)
+- Deployed using Vercel CLI to project `FLOWSENSE`.
+- Example deployment performed from this branch; production URL: `https://flowsense-bice.vercel.app`.
+- Build command: `npm run build`; Output directory: `dist`
+- Note: Vercel serves files in `public/` at the site root, so fetch('/data/<file>') works as expected.
+
+Important notes
+- `dist/` is currently committed in the repo. Recommended: remove `dist/` and add it to `.gitignore`, then let CI produce artifacts for each deployment.
+- Tests added (Vitest) and executed locally in the repo; CI pipeline to run tests on push is recommended.
 
 Environment variables
-- App uses browser `fetch` to `/data/...` and does not depend on server-side envs.
-- Codebase contains no `.env` usage of `process.env` or `import.meta.env` detected in `src/` (search recommended). (confidence: medium)
+- App uses browser `fetch` to `/data/...` and has no required server-side envs for current static mode.
 
 Vite and Tailwind specifics
 - `vite.config.js` sets alias `@` → `./src` (see `vite.config.js`).
 - `tailwind.config.js` content paths include `./src/**/*.{ts,tsx,js,jsx}` and `index.html`.
-
-Committed build
-- `dist/` exists in repository root — build artifacts appear committed. Inspect `dist/index.html` and `dist/assets`.
-
-CI / Deploy hints
-- No `.github/workflows` or other CI detected — add GitHub Actions for build/lint checks (recommended in TODOS.md).
-- Deploy artifacts: `dist/` can be deployed to static hosts; ensure `public/` asset paths are correct.
 
 Relevant files:
 - `package.json`, `vite.config.js`, `tailwind.config.js`, `dist/index.html`, `public/data/*`
