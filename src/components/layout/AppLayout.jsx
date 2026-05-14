@@ -67,12 +67,9 @@ export default function AppLayout() {
 
             {/* Logo */}
             <Link to="/" className="flex items-center gap-3 group">
-              <div className="relative w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, rgba(59,130,246,0.2), rgba(99,102,241,0.2))', border: '1px solid rgba(59,130,246,0.3)' }}>
-                <Droplets className="w-4.5 h-4.5 text-blue-400" />
-                <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: 'linear-gradient(135deg, rgba(59,130,246,0.3), rgba(99,102,241,0.3))' }} />
-              </div>
+              <img src="/images/logo.png" alt="TCWD Flowsense logo" className="w-9 h-9 object-contain rounded-xl" />
               <div className="hidden sm:block">
-                <h1 className="text-sm font-semibold text-white font-space leading-tight tracking-tight">AquaWatch</h1>
+                <h1 className="text-sm font-semibold text-white font-space leading-tight tracking-tight">TCWD "Flowsense"</h1>
                 <p className="text-[10px] text-slate-500 leading-tight tracking-wider uppercase">Anomaly Engine</p>
               </div>
             </Link>
