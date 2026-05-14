@@ -223,7 +223,12 @@ export default function AnomalyTable({ anomalies }) {
           </table>
         </div>
         <div className="px-5 py-3.5 text-xs text-slate-600 font-space flex flex-col gap-2 items-center sm:flex-row sm:justify-between" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-          <span>{filtered.length} of {anomalies.length} records</span>
+          <span>
+            {filtered.length === 0
+              ? '0'
+              : `${(page - 1) * PAGE_SIZE + 1}-${Math.min(page * PAGE_SIZE, filtered.length)}`}
+            {' of '}{filtered.length} records
+          </span>
           {totalPages > 1 && (
             <Pagination>
               <PaginationContent>
