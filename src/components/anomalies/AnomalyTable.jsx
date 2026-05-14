@@ -157,23 +157,14 @@ export default function AnomalyTable({ anomalies }) {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: i * 0.02 }}
-                    className="transition-colors group"
+                    className="transition-colors group cursor-pointer"
                     style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
                     onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.025)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    onClick={() => openDetails(anomaly)}
                   >
                     <td className="px-5 py-4">
-                      <p
-                        className="font-medium text-slate-200 font-space underline hover:text-blue-400 transition-colors cursor-pointer"
-                        style={{ display: 'inline', margin: 0, padding: 0 }}
-                        onClick={e => {
-                          e.stopPropagation();
-                          openDetails(anomaly);
-                        }}
-                        title="View account details"
-                      >
-                        {anomaly.account_name || anomaly.account_id}
-                      </p>
+                      <p className="font-medium text-slate-200 font-space">{anomaly.account_name || anomaly.account_id}</p>
                       <p className="text-xs text-slate-600 mt-0.5 font-mono">{anomaly.account_id}</p>
                     </td>
                     <td className="px-5 py-4 text-slate-500 text-sm hidden md:table-cell">{anomaly.address || '—'}</td>
