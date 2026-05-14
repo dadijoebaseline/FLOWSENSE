@@ -67,7 +67,7 @@ export default function AppLayout() {
 
             {/* Logo */}
             <Link to="/" className="flex items-center gap-3 group">
-              <img src="/images/logo.png" alt="TCWD Flowsense logo" className="w-9 h-9 object-contain rounded-xl" />
+              <img src="/images/logo.png" alt="TCWD Flowsense logo" className="w-7 h-7 sm:w-9 sm:h-9 object-contain rounded-xl" />
               <div className="block">
                 <h1 className="text-sm font-semibold text-white font-space leading-tight tracking-tight">TCWD Flowsense</h1>
                 <p className="text-[10px] text-slate-500 leading-tight tracking-wider uppercase">Anomaly Engine</p>
