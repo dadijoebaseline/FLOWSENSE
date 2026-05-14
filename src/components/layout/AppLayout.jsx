@@ -61,7 +61,7 @@ export default function AppLayout() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* Top Nav */}
-      <header className="sticky top-0 z-50 border-b border-white/[0.06]" style={{ background: 'rgba(10,12,18,0.85)', backdropFilter: 'blur(24px)' }}>
+      <header className="sticky top-0 z-50 border-b border-white/[0.06] glass-backdrop">
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
 
@@ -131,7 +131,7 @@ export default function AppLayout() {
       {/* Mobile Nav */}
       {datasetErrors.length > 0 && (
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
-          <div className="rounded-md bg-yellow-400/95 text-black px-4 py-2 text-sm">
+          <div className="rounded-md glass-backdrop-light text-black px-4 py-2 text-sm">
             <strong>Dataset load errors:</strong>
             <ul className="list-disc pl-5 mt-1">
               {datasetErrors.map((e, i) => <li key={i}>{e}</li>)}
@@ -146,8 +146,7 @@ export default function AppLayout() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
-            className="md:hidden fixed inset-0 top-16 z-40"
-            style={{ background: 'rgba(10,12,18,0.96)', backdropFilter: 'blur(24px)' }}
+            className="md:hidden fixed inset-0 top-16 z-40 glass-backdrop"
           >
             <nav className="p-5 space-y-1.5">
               {navItems.map((item, i) => (
@@ -182,7 +181,7 @@ export default function AppLayout() {
 
       {/* Content */}
       <main className="flex-1">
-        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-10">
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-10 glass-backdrop-light">
           <Outlet context={{ user, role, perms }} />
         </div>
       </main>
