@@ -52,6 +52,12 @@
   }
   body {
     @apply bg-background text-foreground font-dm antialiased;
+    /* Global background image with dark overlay for readability */
+    background-image: linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0.55)), url('/images/background.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
   }
   h1, h2, h3, h4, h5, h6 {
     @apply tracking-tight;
