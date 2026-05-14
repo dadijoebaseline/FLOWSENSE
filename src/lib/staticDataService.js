@@ -55,21 +55,31 @@ export const staticDataService = {
       const allAccounts = await loadAllAccounts();
       // Sort datasets by month ascending
       const sortedDatasets = sortMonths(AVAILABLE_DATASETS.map(d => d.id));
-      // Find all records for this account, sorted by dataset/month
-      const records = sortedDatasets.map(month =>
-        allAccounts.find(acc => acc.account_id === account_id && acc.dataset_id === month)
-      ).filter(Boolean);
-      // Compute consumption for each month (cum_used diff)
-      const trend = [];
-      for (let i = 1; i < records.length; ++i) {
-        const prev = records[i - 1];
-        const curr = records[i];
-        if (prev && curr) {
-          const consumption = Number(curr.cum_used || 0) - Number(prev.cum_used || 0);
-          trend.push({ month: curr.dataset_id, consumption });
+      // Build a map of dataset_id -> account record
+      const accountMap = {};
+      for (const acc of allAccounts) {
+        if (acc.account_id === account_id) {
+          accountMap[acc.dataset_id] = acc;
         }
       }
-      // If not enough data, pad with zeros
+      // Build an array of cumulative readings for each month (or null if missing)
+      const readings = sortedDatasets.map(month => accountMap[month] ? Number(accountMap[month].cum_used || 0) : null);
+      // Compute consumption for each month (difference from previous, or 0 if missing)
+      const trend = [];
+      for (let i = 1; i < readings.length; ++i) {
+        const prev = readings[i - 1];
+        const curr = readings[i];
+        let consumption = 0;
+        if (prev !== null && curr !== null) {
+          consumption = curr - prev;
+        } else if (prev !== null && curr === null) {
+          consumption = 0;
+        } else if (prev === null && curr !== null) {
+          consumption = 0;
+        } // both null: keep as 0
+        trend.push({ month: sortedDatasets[i], consumption });
+      }
+      // If not enough data, pad with zeros at the start
       while (trend.length < months) {
         trend.unshift({ month: sortedDatasets[trend.length], consumption: 0 });
       }
