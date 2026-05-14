@@ -228,6 +228,14 @@ export default function AnomalyTable({ anomalies }) {
             <Pagination>
               <PaginationContent>
                 <PaginationItem>
+                  <PaginationLink
+                    href="#"
+                    onClick={e => { e.preventDefault(); setPage(1); }}
+                    aria-disabled={page === 1}
+                    tabIndex={page === 1 ? -1 : 0}
+                  >First</PaginationLink>
+                </PaginationItem>
+                <PaginationItem>
                   <PaginationPrevious
                     href="#"
                     onClick={e => { e.preventDefault(); setPage(p => Math.max(1, p - 1)); }}
@@ -235,17 +243,6 @@ export default function AnomalyTable({ anomalies }) {
                     tabIndex={page === 1 ? -1 : 0}
                   />
                 </PaginationItem>
-                {Array.from({ length: totalPages }, (_, idx) => (
-                  <PaginationItem key={idx}>
-                    <PaginationLink
-                      href="#"
-                      isActive={page === idx + 1}
-                      onClick={e => { e.preventDefault(); setPage(idx + 1); }}
-                    >
-                      {idx + 1}
-                    </PaginationLink>
-                  </PaginationItem>
-                ))}
                 <PaginationItem>
                   <PaginationNext
                     href="#"
@@ -253,6 +250,14 @@ export default function AnomalyTable({ anomalies }) {
                     aria-disabled={page === totalPages}
                     tabIndex={page === totalPages ? -1 : 0}
                   />
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationLink
+                    href="#"
+                    onClick={e => { e.preventDefault(); setPage(totalPages); }}
+                    aria-disabled={page === totalPages}
+                    tabIndex={page === totalPages ? -1 : 0}
+                  >Last</PaginationLink>
                 </PaginationItem>
               </PaginationContent>
             </Pagination>
