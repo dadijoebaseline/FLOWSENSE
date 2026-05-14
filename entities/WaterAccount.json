@@ -1,0 +1,89 @@
+{
+  "name": "WaterAccount",
+  "type": "object",
+  "properties": {
+    "account_id": {
+      "type": "string",
+      "description": "AccountNumber from GeoJSON"
+    },
+    "account_name": {
+      "type": "string",
+      "description": "Name field from GeoJSON"
+    },
+    "address": {
+      "type": "string",
+      "description": "Address field from GeoJSON"
+    },
+    "area": {
+      "type": "string",
+      "description": "AREA field from GeoJSON"
+    },
+    "meter_no": {
+      "type": "string",
+      "description": "MeterNo from GeoJSON"
+    },
+    "book_no": {
+      "type": "string",
+      "description": "BookNo from GeoJSON"
+    },
+    "rate_code": {
+      "type": "string",
+      "description": "RateCode from GeoJSON"
+    },
+    "status": {
+      "type": "string",
+      "description": "Status from GeoJSON"
+    },
+    "prv_reading": {
+      "type": "number",
+      "default": 0,
+      "description": "Previous meter reading (PRVReading)"
+    },
+    "prs_reading": {
+      "type": "number",
+      "default": 0,
+      "description": "Present meter reading (PRSReading)"
+    },
+    "cum_used": {
+      "type": "number",
+      "default": 0,
+      "description": "Cubic meters used this month (CumUsed)"
+    },
+    "bill_amount": {
+      "type": "number",
+      "default": 0,
+      "description": "Bill amount for this month"
+    },
+    "year": {
+      "type": "number",
+      "description": "Year of the reading"
+    },
+    "month": {
+      "type": "string",
+      "description": "Month label of the reading"
+    },
+    "latitude": {
+      "type": "number",
+      "description": "Latitude coordinate"
+    },
+    "longitude": {
+      "type": "number",
+      "description": "Longitude coordinate"
+    },
+    "dataset_id": {
+      "type": "string",
+      "description": "Reference to the parent WaterDataset"
+    },
+    "remarks": {
+      "type": "string",
+      "description": "Remarks from GeoJSON"
+    },
+    "type": {
+      "type": "string",
+      "description": "Account type"
+    }
+  },
+  "required": [
+    "account_id"
+  ]
+}

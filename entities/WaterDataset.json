@@ -1,0 +1,43 @@
+{
+  "name": "WaterDataset",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Name/label for this dataset upload"
+    },
+    "month_label": {
+      "type": "string",
+      "description": "Month label e.g. 2024-01, 2024-02"
+    },
+    "file_url": {
+      "type": "string",
+      "description": "URL of the uploaded GeoJSON file"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "uploaded",
+        "processing",
+        "completed",
+        "error"
+      ],
+      "default": "uploaded",
+      "description": "Processing status"
+    },
+    "total_accounts": {
+      "type": "number",
+      "default": 0,
+      "description": "Total accounts in this dataset"
+    },
+    "anomalies_found": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of anomalies detected"
+    }
+  },
+  "required": [
+    "name",
+    "month_label"
+  ]
+}
