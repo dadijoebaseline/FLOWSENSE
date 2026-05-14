@@ -6,6 +6,14 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContai
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ANOMALY_LABELS } from '@/lib/anomalyDetection';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationPrevious,
+  PaginationNext,
+} from '@/components/ui/pagination';
 import { Search, ArrowUpRight, ArrowDownRight, Minus, SlidersHorizontal } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -29,6 +37,8 @@ const inputStyle = {
 };
 
 export default function AnomalyTable({ anomalies }) {
+  const PAGE_SIZE = 10;
+  const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [severityFilter, setSeverityFilter] = useState('all');
@@ -74,6 +84,16 @@ export default function AnomalyTable({ anomalies }) {
     const matchSeverity = severityFilter === 'all' || a.severity === severityFilter;
     return matchSearch && matchType && matchSeverity;
   });
+
+  // Pagination logic
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  // Reset to page 1 if filter/search changes and page is out of range
+  useEffect(() => {
+    if (page > totalPages) setPage(1);
+    // eslint-disable-next-line
+  }, [search, typeFilter, severityFilter, anomalies]);
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
@@ -145,7 +165,7 @@ export default function AnomalyTable({ anomalies }) {
                   </td>
                 </tr>
               )}
-              {filtered.map((anomaly, i) => {
+              {paged.map((anomaly, i) => {
                 const tc = typeConfig[anomaly.anomaly_type];
                 const sc = severityConfig[anomaly.severity];
                 const Icon = tc?.icon || Minus;
@@ -202,8 +222,41 @@ export default function AnomalyTable({ anomalies }) {
             </tbody>
           </table>
         </div>
-        <div className="px-5 py-3.5 text-xs text-slate-600 font-space" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-          {filtered.length} of {anomalies.length} records
+        <div className="px-5 py-3.5 text-xs text-slate-600 font-space flex flex-col gap-2 items-center sm:flex-row sm:justify-between" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+          <span>{filtered.length} of {anomalies.length} records</span>
+          {totalPages > 1 && (
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    href="#"
+                    onClick={e => { e.preventDefault(); setPage(p => Math.max(1, p - 1)); }}
+                    aria-disabled={page === 1}
+                    tabIndex={page === 1 ? -1 : 0}
+                  />
+                </PaginationItem>
+                {Array.from({ length: totalPages }, (_, idx) => (
+                  <PaginationItem key={idx}>
+                    <PaginationLink
+                      href="#"
+                      isActive={page === idx + 1}
+                      onClick={e => { e.preventDefault(); setPage(idx + 1); }}
+                    >
+                      {idx + 1}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))}
+                <PaginationItem>
+                  <PaginationNext
+                    href="#"
+                    onClick={e => { e.preventDefault(); setPage(p => Math.min(totalPages, p + 1)); }}
+                    aria-disabled={page === totalPages}
+                    tabIndex={page === totalPages ? -1 : 0}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          )}
         </div>
       </div>
       {/* Details Dialog */}
