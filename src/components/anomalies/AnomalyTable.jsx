@@ -60,6 +60,11 @@ export default function AnomalyTable({ anomalies }) {
     setDialogOpen(true);
   }
 
+  function handleDialogOpenChange(open) {
+    setDialogOpen(open);
+    if (!open) setSelected(null);
+  }
+
   const filtered = anomalies.filter(a => {
     const matchSearch = !search ||
       (a.account_name || '').toLowerCase().includes(search.toLowerCase()) ||
@@ -158,17 +163,18 @@ export default function AnomalyTable({ anomalies }) {
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                   >
                     <td className="px-5 py-4">
-                      <button
-                        className="text-left w-full focus:outline-none"
-                        style={{ background: 'none', border: 'none', padding: 0, margin: 0 }}
-                        onClick={() => openDetails(anomaly)}
+                      <p
+                        className="font-medium text-slate-200 font-space underline hover:text-blue-400 transition-colors cursor-pointer"
+                        style={{ display: 'inline', margin: 0, padding: 0 }}
+                        onClick={e => {
+                          e.stopPropagation();
+                          openDetails(anomaly);
+                        }}
                         title="View account details"
                       >
-                        <p className="font-medium text-slate-200 font-space underline hover:text-blue-400 transition-colors">
-                          {anomaly.account_name || anomaly.account_id}
-                        </p>
-                        <p className="text-xs text-slate-600 mt-0.5 font-mono">{anomaly.account_id}</p>
-                      </button>
+                        {anomaly.account_name || anomaly.account_id}
+                      </p>
+                      <p className="text-xs text-slate-600 mt-0.5 font-mono">{anomaly.account_id}</p>
                     </td>
                     <td className="px-5 py-4 text-slate-500 text-sm hidden md:table-cell">{anomaly.address || '—'}</td>
                     <td className="px-5 py-4">
@@ -210,7 +216,7 @@ export default function AnomalyTable({ anomalies }) {
         </div>
       </div>
       {/* Details Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
         <DialogContent className="max-w-lg w-full">
           {selected && (
             <>
