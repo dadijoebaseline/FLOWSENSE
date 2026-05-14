@@ -1,0 +1,28 @@
+[
+  {
+    "account_id": "A1001",
+    "account_name": "John Doe",
+    "address": "123 Main St",
+    "anomaly_type": "sudden_high",
+    "severity": "high",
+    "average_consumption": 15.2,
+    "current_consumption": 25.7,
+    "deviation_percent": 69.1,
+    "latitude": 14.5995,
+    "longitude": 120.9842,
+    "dataset_id": "2026-05"
+  },
+  {
+    "account_id": "A1002",
+    "account_name": "Jane Smith",
+    "address": "456 Elm St",
+    "anomaly_type": "zero_consumption",
+    "severity": "critical",
+    "average_consumption": 12.8,
+    "current_consumption": 0,
+    "deviation_percent": -100,
+    "latitude": 14.6000,
+    "longitude": 120.9850,
+    "dataset_id": "2026-05"
+  }
+]
