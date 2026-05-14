@@ -1,4 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { staticDataService } from '@/lib/staticDataService';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
+import { ChartContainer } from '@/components/ui/chart';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from 'recharts';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ANOMALY_LABELS } from '@/lib/anomalyDetection';
@@ -28,6 +32,33 @@ export default function AnomalyTable({ anomalies }) {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [severityFilter, setSeverityFilter] = useState('all');
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selected, setSelected] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [histLoading, setHistLoading] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    if (!selected) return () => { mounted = false };
+    (async () => {
+      setHistLoading(true);
+      try {
+        const h = await staticDataService.getAccountHistory(selected.account_id, 3);
+        if (mounted) setHistory(h);
+      } catch (e) {
+        // ignore
+      } finally {
+        if (mounted) setHistLoading(false);
+      }
+    })();
+    return () => { mounted = false };
+  }, [selected]);
+
+  function openDetails(anomaly) {
+    setSelected(anomaly);
+    setDialogOpen(true);
+  }
 
   const filtered = anomalies.filter(a => {
     const matchSearch = !search ||
@@ -127,8 +158,17 @@ export default function AnomalyTable({ anomalies }) {
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                   >
                     <td className="px-5 py-4">
-                      <p className="font-medium text-slate-200 font-space">{anomaly.account_name || anomaly.account_id}</p>
-                      <p className="text-xs text-slate-600 mt-0.5 font-mono">{anomaly.account_id}</p>
+                      <button
+                        className="text-left w-full focus:outline-none"
+                        style={{ background: 'none', border: 'none', padding: 0, margin: 0 }}
+                        onClick={() => openDetails(anomaly)}
+                        title="View account details"
+                      >
+                        <p className="font-medium text-slate-200 font-space underline hover:text-blue-400 transition-colors">
+                          {anomaly.account_name || anomaly.account_id}
+                        </p>
+                        <p className="text-xs text-slate-600 mt-0.5 font-mono">{anomaly.account_id}</p>
+                      </button>
                     </td>
                     <td className="px-5 py-4 text-slate-500 text-sm hidden md:table-cell">{anomaly.address || '—'}</td>
                     <td className="px-5 py-4">
@@ -169,6 +209,73 @@ export default function AnomalyTable({ anomalies }) {
           {filtered.length} of {anomalies.length} records
         </div>
       </div>
+      {/* Details Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-lg w-full">
+          {selected && (
+            <>
+              <DialogHeader>
+                <DialogTitle>Account Details</DialogTitle>
+                <DialogDescription>
+                  <div className="mt-2 mb-3">
+                    <div className="font-semibold text-base text-slate-200">{selected.account_name || selected.account_id}</div>
+                    <div className="text-xs text-slate-500 font-mono">{selected.account_id}</div>
+                    {selected.address && <div className="text-xs text-slate-400 mt-1">{selected.address}</div>}
+                  </div>
+                  <div className="flex gap-4 mb-2">
+                    <div>
+                      <span className="text-xs text-slate-500">Type: </span>
+                      <span className="font-medium text-slate-300">{ANOMALY_LABELS[selected.anomaly_type]}</span>
+                    </div>
+                    <div>
+                      <span className="text-xs text-slate-500">Severity: </span>
+                      <span className="font-medium capitalize" style={{ color: severityConfig[selected.severity]?.text ? undefined : '#fff' }}>{selected.severity}</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-4 mb-2">
+                    <div>
+                      <span className="text-xs text-slate-500">Avg: </span>
+                      <span className="font-medium text-slate-300">{selected.average_consumption} cu.m.</span>
+                    </div>
+                    <div>
+                      <span className="text-xs text-slate-500">Current: </span>
+                      <span className="font-medium text-slate-300">{selected.current_consumption} cu.m.</span>
+                    </div>
+                    <div>
+                      <span className="text-xs text-slate-500">Deviation: </span>
+                      <span className={`font-medium ${selected.deviation_percent > 0 ? 'text-red-400' : 'text-sky-400'}`}>{selected.deviation_percent > 0 ? '+' : ''}{selected.deviation_percent}%</span>
+                    </div>
+                  </div>
+                </DialogDescription>
+              </DialogHeader>
+              <div className="mt-4">
+                <div className="font-semibold text-xs text-slate-400 mb-2">3-Month Consumption Trend</div>
+                {histLoading ? (
+                  <div className="text-xs text-slate-500">Loading...</div>
+                ) : history && history.length > 0 ? (
+                  <ChartContainer style={{ height: 180 }} config={{}}>
+                    <AreaChart data={history} margin={{ left: 10, right: 10, top: 10, bottom: 10 }}>
+                      <defs>
+                        <linearGradient id="colorCons" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#38bdf8" stopOpacity={0.7} />
+                          <stop offset="100%" stopColor="#38bdf8" stopOpacity={0.1} />
+                        </linearGradient>
+                      </defs>
+                      <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                      <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} width={32} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                      <Tooltip contentStyle={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 8, fontSize: 12, color: '#e2e8f0' }} />
+                      <Area type="monotone" dataKey="consumption" stroke="#38bdf8" fill="url(#colorCons)" strokeWidth={2} dot={{ r: 3 }} />
+                    </AreaChart>
+                  </ChartContainer>
+                ) : (
+                  <div className="text-xs text-slate-500">No consumption history available.</div>
+                )}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }
