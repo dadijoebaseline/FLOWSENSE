@@ -46,6 +46,36 @@ function sortMonths(months) {
 }
 
 export const staticDataService = {
+    /**
+     * Returns the last N months of consumption for an account as an array:
+     * [ { month: '2026-03', consumption: ... }, ... ]
+     */
+    async getAccountHistory(account_id, months = 3) {
+      // Load all accounts from all datasets
+      const allAccounts = await loadAllAccounts();
+      // Sort datasets by month ascending
+      const sortedDatasets = sortMonths(AVAILABLE_DATASETS.map(d => d.id));
+      // Find all records for this account, sorted by dataset/month
+      const records = sortedDatasets.map(month =>
+        allAccounts.find(acc => acc.account_id === account_id && acc.dataset_id === month)
+      ).filter(Boolean);
+      // Compute consumption for each month (cum_used diff)
+      const trend = [];
+      for (let i = 1; i < records.length; ++i) {
+        const prev = records[i - 1];
+        const curr = records[i];
+        if (prev && curr) {
+          const consumption = Number(curr.cum_used || 0) - Number(prev.cum_used || 0);
+          trend.push({ month: curr.dataset_id, consumption });
+        }
+      }
+      // If not enough data, pad with zeros
+      while (trend.length < months) {
+        trend.unshift({ month: sortedDatasets[trend.length], consumption: 0 });
+      }
+      // Return only the last N months
+      return trend.slice(-months);
+    },
   async getDatasets() {
     const allAccounts = await loadAllAccounts();
     const anomalies = await this.getAnomalies();
