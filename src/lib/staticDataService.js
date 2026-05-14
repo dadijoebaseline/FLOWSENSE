@@ -1,70 +1,88 @@
-// Static data service for FlowSense
-// Replaces Base44 SDK calls with local GeoJSON fetching
+import { detectAnomaliesWithHistory, parseGeoJSON } from './anomalyDetection';
 
 const AVAILABLE_DATASETS = [
-  { id: '2024-01', name: 'January 2024', month_label: '2024-01', status: 'completed', total_accounts: 3, anomalies_found: 0 },
-  { id: '2024-02', name: 'February 2024', month_label: '2024-02', status: 'completed', total_accounts: 3, anomalies_found: 0 },
-  { id: '2024-03', name: 'March 2024', month_label: '2024-03', status: 'completed', total_accounts: 3, anomalies_found: 2 }
+  { id: '2024-01', name: 'January 2024', month_label: '2024-01', file: '2024-01.geojson' },
+  { id: '2024-02', name: 'February 2024', month_label: '2024-02', file: '2024-02.geojson' },
+  { id: '2024-03', name: 'March 2024', month_label: '2024-03', file: '2024-03.geojson' },
+  { id: '2026-03', name: 'March 2026', month_label: '2026-03', file: '2026-03.geojson' },
+  { id: '2026-04', name: 'April 2026', month_label: '2026-04', file: '2026-04.geojson' },
+  { id: '2026-05', name: 'May 2026', month_label: '2026-05', file: '2026-05.geojson' },
 ];
 
-const ANOMALIES_DATA = [
-  {
-    id: 'anom-1',
-    account_id: 'ACC001',
-    account_name: 'John Smith',
-    address: '123 Main St',
-    anomaly_type: 'sudden_high',
-    severity: 'critical',
-    average_consumption: 148.4,
-    current_consumption: 450.0,
-    deviation_percent: 203.23,
-    latitude: 34.0522,
-    longitude: -118.2437,
-    dataset_id: '2024-03'
-  },
-  {
-    id: 'anom-2',
-    account_id: 'ACC002',
-    account_name: 'Jane Doe',
-    address: '456 Oak Ave',
-    anomaly_type: 'zero_consumption',
-    severity: 'critical',
-    average_consumption: 197.65,
-    current_consumption: 0.0,
-    deviation_percent: -100.0,
-    latitude: 34.0622,
-    longitude: -118.2537,
-    dataset_id: '2024-03'
+const datasetStatus = 'completed';
+
+async function fetchGeoJSONFile(fileName) {
+  try {
+    const response = await fetch(`/data/${fileName}`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch ${fileName}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error(`Error fetching GeoJSON file ${fileName}:`, error);
+    return { features: [] };
   }
-];
+}
+
+async function loadDatasetAccounts(dataset) {
+  const geojson = await fetchGeoJSONFile(dataset.file);
+  const accounts = parseGeoJSON(geojson);
+
+  return accounts.map(account => ({
+    ...account,
+    dataset_id: dataset.id,
+  }));
+}
+
+async function loadAllAccounts() {
+  const accountLists = await Promise.all(AVAILABLE_DATASETS.map(loadDatasetAccounts));
+  return accountLists.flat();
+}
+
+function sortMonths(months) {
+  return [...months].sort((a, b) => a.localeCompare(b));
+}
 
 export const staticDataService = {
-  // Fetch all datasets
   async getDatasets() {
-    return AVAILABLE_DATASETS;
+    const allAccounts = await loadAllAccounts();
+    const anomalies = await this.getAnomalies();
+
+    return AVAILABLE_DATASETS.map(dataset => ({
+      ...dataset,
+      status: datasetStatus,
+      total_accounts: allAccounts.filter(account => account.dataset_id === dataset.id).length,
+      anomalies_found: anomalies.filter(anomaly => anomaly.dataset_id === dataset.id).length,
+    }));
   },
 
-  // Fetch all anomalies
   async getAnomalies() {
-    return ANOMALIES_DATA;
+    const months = sortMonths(this.getAvailableMonths());
+
+    const allAccounts = await loadAllAccounts();
+    const historicalAccounts = [];
+    const anomalies = [];
+
+    for (const month of months) {
+      const currentAccounts = allAccounts.filter(account => account.dataset_id === month);
+      const monthAnomalies = detectAnomaliesWithHistory(currentAccounts, historicalAccounts);
+      anomalies.push(...monthAnomalies);
+      historicalAccounts.push(...currentAccounts);
+    }
+
+    return anomalies;
   },
 
-  // Fetch GeoJSON data for a specific month
   async getGeoJSONData(month) {
-    try {
-      const response = await fetch(`/data/${month}.geojson`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch data for ${month}`);
-      }
-      return await response.json();
-    } catch (error) {
-      console.error(`Error fetching GeoJSON for ${month}:`, error);
+    const dataset = AVAILABLE_DATASETS.find(item => item.id === month);
+    if (!dataset) {
+      console.warn(`GeoJSON request for unknown month: ${month}`);
       return { features: [] };
     }
+    return fetchGeoJSONFile(dataset.file);
   },
 
-  // Get all available months
   getAvailableMonths() {
-    return ['2024-01', '2024-02', '2024-03'];
-  }
+    return AVAILABLE_DATASETS.map(dataset => dataset.id);
+  },
 };
