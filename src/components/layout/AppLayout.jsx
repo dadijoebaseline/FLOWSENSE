@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import { getUserPermissions } from '@/lib/roleAccess';
+import { staticDataService } from '@/lib/staticDataService';
 import {
   LayoutDashboard,
   Upload,
@@ -21,10 +22,26 @@ import { motion, AnimatePresence } from 'framer-motion';
 export default function AppLayout() {
   const { user, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [datasetErrors, setDatasetErrors] = useState([]);
   const location = useLocation();
 
   const role = user?.role || 'viewer';
   const perms = getUserPermissions(role);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const ds = await staticDataService.getDatasets();
+        if (!mounted) return;
+        const errs = ds.filter(d => d.load_error).map(d => `${d.file}: ${d.load_error}`);
+        setDatasetErrors(errs);
+      } catch (e) {
+        // ignore
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
 
   const navItems = [
     perms.canViewDashboard && { path: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -115,6 +132,16 @@ export default function AppLayout() {
       </header>
 
       {/* Mobile Nav */}
+      {datasetErrors.length > 0 && (
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+          <div className="rounded-md bg-yellow-400/95 text-black px-4 py-2 text-sm">
+            <strong>Dataset load errors:</strong>
+            <ul className="list-disc pl-5 mt-1">
+              {datasetErrors.map((e, i) => <li key={i}>{e}</li>)}
+            </ul>
+          </div>
+        </div>
+      )}
       <AnimatePresence>
         {mobileOpen && (
           <motion.div

@@ -10,28 +10,33 @@ const AVAILABLE_DATASETS = [
 ];
 
 const datasetStatus = 'completed';
+const loadErrors = [];
 
 async function fetchGeoJSONFile(fileName) {
   try {
     const response = await fetch(`/data/${fileName}`);
     if (!response.ok) {
-      throw new Error(`Failed to fetch ${fileName}`);
+      throw new Error(`Failed to fetch ${fileName} (status ${response.status})`);
     }
     return await response.json();
   } catch (error) {
     console.error(`Error fetching GeoJSON file ${fileName}:`, error);
-    return { features: [] };
+    const err = { file: fileName, error: String(error?.message || error) };
+    loadErrors.push(err);
+    return { features: [], __error: err.error };
   }
 }
 
 async function loadDatasetAccounts(dataset) {
   const geojson = await fetchGeoJSONFile(dataset.file);
-  const accounts = parseGeoJSON(geojson);
+  const accounts = parseGeoJSON(geojson, dataset.month_label);
 
-  return accounts.map(account => ({
-    ...account,
-    dataset_id: dataset.id,
-  }));
+  return accounts
+    .filter(a => a && a.account_id)
+    .map(account => ({
+      ...account,
+      dataset_id: dataset.id,
+    }));
 }
 
 async function loadAllAccounts() {
@@ -48,12 +53,16 @@ export const staticDataService = {
     const allAccounts = await loadAllAccounts();
     const anomalies = await this.getAnomalies();
 
-    return AVAILABLE_DATASETS.map(dataset => ({
-      ...dataset,
-      status: datasetStatus,
-      total_accounts: allAccounts.filter(account => account.dataset_id === dataset.id).length,
-      anomalies_found: anomalies.filter(anomaly => anomaly.dataset_id === dataset.id).length,
-    }));
+    return AVAILABLE_DATASETS.map(dataset => {
+      const err = loadErrors.find(e => e.file === dataset.file);
+      return {
+        ...dataset,
+        status: datasetStatus,
+        total_accounts: allAccounts.filter(account => account.dataset_id === dataset.id).length,
+        anomalies_found: anomalies.filter(anomaly => anomaly.dataset_id === dataset.id).length,
+        load_error: err ? err.error : null,
+      };
+    });
   },
 
   async getAnomalies() {
@@ -84,5 +93,9 @@ export const staticDataService = {
 
   getAvailableMonths() {
     return AVAILABLE_DATASETS.map(dataset => dataset.id);
+  },
+
+  getLoadErrors() {
+    return loadErrors.slice();
   },
 };

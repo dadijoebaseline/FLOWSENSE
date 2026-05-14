@@ -79,15 +79,45 @@ export function detectAnomalies(accounts) {
   return anomalies;
 }
 
-export function parseGeoJSON(geojsonData) {
+export function parseGeoJSON(geojsonData, datasetLabel = '') {
   const features = geojsonData.features || [];
+  const accounts = [];
 
-  return features.map(feature => {
+  for (let i = 0; i < features.length; i++) {
+    const feature = features[i];
     const props = feature.properties || {};
-    const coords = feature.geometry?.coordinates || [0, 0];
+    const coords = feature.geometry?.coordinates || [];
+    const lng = Number(coords[0]);
+    const lat = Number(coords[1]);
 
-    return {
-      account_id: String(props.AccountNumber || props.account_id || props.ogc_fid || Math.random().toString(36).slice(2, 10)),
+    const rawId = props.AccountNumber || props.account_id || props.ogc_fid || props.MeterNo || '';
+    const accountId = rawId ? String(rawId).trim().replace(/\s+/g, '').replace(/[^A-Za-z0-9_-]/g, '').toUpperCase() : null;
+
+    const cum_used = Number(props.CumUsed ?? props.cum_used ?? props.Cum_Used) || 0;
+
+    const warnings = [];
+
+    const featureMonth = String(props.Month || props.month || '');
+    if (datasetLabel && featureMonth) {
+      // If datasetLabel looks like '2026-05' and featureMonth like 'MAY' or '05', do a best-effort check
+      const ds = String(datasetLabel).toUpperCase();
+      const fm = featureMonth.toUpperCase();
+      if (!ds.includes(fm) && !ds.includes(String(props.Year || '')) && fm.length > 0) {
+        warnings.push(`Month mismatch: feature Month='${featureMonth}' vs dataset='${datasetLabel}'`);
+      }
+    }
+
+    if (!accountId) {
+      console.warn(`parseGeoJSON: skipping feature at index ${i} — missing stable id (AccountNumber/MeterNo/ogc_fid)`);
+      continue;
+    }
+
+    if (!Number.isFinite(lng) || !Number.isFinite(lat)) {
+      warnings.push('Invalid coordinates');
+    }
+
+    accounts.push({
+      account_id: accountId,
       account_name: props.Name || props.account_name || '',
       address: props.Address || props.address || '',
       area: props.AREA || '',
@@ -97,16 +127,19 @@ export function parseGeoJSON(geojsonData) {
       status: props.Status || '',
       prv_reading: Number(props.PRVReading) || 0,
       prs_reading: Number(props.PRSReading) || 0,
-      cum_used: Number(props.CumUsed) || 0,
+      cum_used,
       bill_amount: Number(props.BillAmount) || 0,
       year: props.Year || null,
       month: props.Month || '',
       remarks: props.Remarks || '',
       type: props.Type || '',
-      longitude: coords[0],
-      latitude: coords[1],
-    };
-  });
+      longitude: lng,
+      latitude: lat,
+      _warnings: warnings.length ? warnings : undefined,
+    });
+  }
+
+  return accounts;
 }
 
 /**
@@ -119,26 +152,45 @@ export function parseGeoJSON(geojsonData) {
 export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) {
   const anomalies = [];
 
-  // Build a lookup: accountId -> array of historical cum_used values
+  // Build a lookup: accountId -> array of historical cum_used values (chronological)
   const historyMap = {};
   for (const acc of historicalAccounts) {
     if (!acc.account_id) continue;
     if (!historyMap[acc.account_id]) historyMap[acc.account_id] = [];
-    historyMap[acc.account_id].push(acc.cum_used || 0);
+    historyMap[acc.account_id].push(Number(acc.cum_used || 0));
   }
 
   for (const account of currentAccounts) {
-    const current = account.cum_used || 0;
+    if (!account.account_id) continue;
+    const currentReading = Number(account.cum_used || 0);
     const history = historyMap[account.account_id] || [];
 
-    // Need at least 1 historical reading to compare
-    const prevReadings = history.filter(v => v > 0);
-    const avgPrev = prevReadings.length > 0
-      ? prevReadings.reduce((a, b) => a + b, 0) / prevReadings.length
-      : 0;
+    if (history.length === 0) continue; // no history to compare
 
-    // Zero Consumption: had history but now zero
-    if (current === 0 && avgPrev > 0) {
+    const prevReading = history[history.length - 1];
+
+    // Compute current consumption as delta from last historical cumulative reading
+    let currentConsumption = currentReading - prevReading;
+    let usedFallback = false;
+    if (currentConsumption < 0) {
+      // Possible meter rollover or data issue; fallback to using currentReading as consumption
+      usedFallback = true;
+      currentConsumption = currentReading;
+    }
+
+    // Compute average previous consumption from historical diffs if available
+    const diffs = [];
+    for (let i = 1; i < history.length; i++) {
+      const d = history[i] - history[i - 1];
+      if (d > 0) diffs.push(d);
+    }
+    const avgPrev = diffs.length > 0 ? diffs.reduce((a, b) => a + b, 0) / diffs.length : null;
+
+    // If we can't compute an average previous consumption, skip anomaly detection for now
+    if (avgPrev === null || avgPrev === 0) continue;
+
+    // Zero Consumption: had history but now zero consumption
+    if (currentConsumption === 0 && avgPrev > 0) {
       anomalies.push({
         account_id: account.account_id,
         account_name: account.account_name || '',
@@ -155,12 +207,10 @@ export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) 
       continue;
     }
 
-    if (avgPrev === 0) continue;
+    const deviationPercent = ((currentConsumption - avgPrev) / avgPrev) * 100;
 
-    const deviationPercent = ((current - avgPrev) / avgPrev) * 100;
-
-    // Sudden High: ≥ 30% above average
-    if (current >= avgPrev * 1.30) {
+    // Sudden High: consumption ≥ 30% above average
+    if (currentConsumption >= avgPrev * 1.30) {
       anomalies.push({
         account_id: account.account_id,
         account_name: account.account_name || '',
@@ -168,15 +218,16 @@ export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) 
         anomaly_type: 'sudden_high',
         severity: deviationPercent >= 100 ? 'critical' : deviationPercent >= 50 ? 'high' : 'medium',
         average_consumption: Math.round(avgPrev * 100) / 100,
-        current_consumption: current,
+        current_consumption: Math.round(currentConsumption * 100) / 100,
         deviation_percent: Math.round(deviationPercent * 100) / 100,
         latitude: account.latitude,
         longitude: account.longitude,
         dataset_id: account.dataset_id,
+        _meta: usedFallback ? { note: 'used fallback consumption (possible meter reset)' } : undefined,
       });
     }
-    // Sudden Down: ≥ 30% below average
-    else if (current <= avgPrev * 0.70) {
+    // Sudden Down: consumption ≤ 30% below average
+    else if (currentConsumption <= avgPrev * 0.70) {
       anomalies.push({
         account_id: account.account_id,
         account_name: account.account_name || '',
@@ -184,7 +235,7 @@ export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) 
         anomaly_type: 'sudden_down',
         severity: deviationPercent <= -70 ? 'critical' : deviationPercent <= -50 ? 'high' : 'medium',
         average_consumption: Math.round(avgPrev * 100) / 100,
-        current_consumption: current,
+        current_consumption: Math.round(currentConsumption * 100) / 100,
         deviation_percent: Math.round(deviationPercent * 100) / 100,
         latitude: account.latitude,
         longitude: account.longitude,
