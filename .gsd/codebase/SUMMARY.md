@@ -7,7 +7,7 @@
 3. Data ingestion improved: `parseGeoJSON()` now normalizes/stabilizes account IDs (AccountNumber / MeterNo / ogc_fid) and skips features without stable ids. Warnings available via `_warnings`. (confidence: high)
 4. Fetch & UI improvements: `staticDataService` now tracks dataset load errors and UI shows a banner when loads fail. (confidence: high)
 5. Tests and CI: Vitest tests added for parse and detection (`src/lib/__tests__/anomalyDetection.test.js`). Run `npm test` locally. (confidence: high)
-6. Deployment: Built and deployed to Vercel (project: FLOWSENSE). Production URL: https://flowsense-bice.vercel.app (confidence: high).
+6. Deployment: Built and deployed to Vercel (project: FLOWSENSE). Production URL: https://flowsense-bice.vercel.app. Canonical alias: https://tcwdflowsense.vercel.app — always use this alias in documentation and public links. (confidence: high).
 7. Build artifacts: `dist/` is currently committed in the repo (see `dist/`). Recommended: remove `dist/` and use CI to build. (confidence: high)
 8. Remaining risk: no runtime JSON schema validation yet — consider adding `zod`-based validation against `entities/*.json`. (confidence: medium)
 

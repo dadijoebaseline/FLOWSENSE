@@ -20,6 +20,7 @@ Serving `dist/`
 Vercel (production)
 - Deployed using Vercel CLI to project `FLOWSENSE`.
 - Example deployment performed from this branch; production URL: `https://flowsense-bice.vercel.app`.
+- Canonical production alias: `https://tcwdflowsense.vercel.app` — use this alias for demos, published links, and internal documentation.
 - Build command: `npm run build`; Output directory: `dist`
 - Note: Vercel serves files in `public/` at the site root, so fetch('/data/<file>') works as expected.
 
