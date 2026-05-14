@@ -33,13 +33,15 @@ export default function AnomalyMap({ anomalies, height = '500px' }) {
     return [avgLat, avgLng];
   }, [validAnomalies]);
 
+  const containerStyleBase = { border: '1px solid rgba(255,255,255,0.07)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' };
+  const useClassHeight = typeof height === 'string' && height.includes('h-');
+  const containerClassName = `rounded-2xl overflow-hidden w-full ${useClassHeight ? height : ''}`.trim();
+  const containerStyle = useClassHeight ? containerStyleBase : { ...containerStyleBase, height };
+
   return (
     <>
       <style>{popupStyle}</style>
-      <div
-        className="rounded-2xl overflow-hidden"
-        style={{ height, border: '1px solid rgba(255,255,255,0.07)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}
-      >
+      <div className={containerClassName} style={containerStyle}>
         <MapContainer center={center} zoom={11} className="w-full h-full" scrollWheelZoom={true} zoomControl={true}>
           {/* Dark map tiles from CartoDB */}
           <TileLayer

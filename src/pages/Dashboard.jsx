@@ -88,7 +88,7 @@ export default function Dashboard() {
             <h3 className="text-sm font-semibold text-white font-space">Anomaly Map</h3>
             <span className="text-xs text-slate-500">{anomalies.filter(a => a.latitude).length} plotted</span>
           </div>
-          <AnomalyMap anomalies={anomalies} height="400px" />
+          <AnomalyMap anomalies={anomalies} height="h-56 sm:h-72 md:h-80 lg:h-96" />
         </motion.div>
         <div className="lg:col-span-2">
           <RecentAnomalies anomalies={anomalies} />
