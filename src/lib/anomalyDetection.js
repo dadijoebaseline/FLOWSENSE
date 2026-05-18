@@ -194,9 +194,9 @@ export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) 
 
     if (currentConsumption === 0 && avgPrev > 0) {
       anomalies.push({
-        account_id: account.account_id,
-        account_number: account.account_id,
-        account_name: account.account_name || '',
+        accountnumber: account.account_id,
+        name: account.account_name || '',
+        meterno: account.meter_no || '',
         address: account.address || '',
         anomaly_type: 'zero_consumption',
         severity: 'critical',
@@ -221,9 +221,9 @@ export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) 
     // Sudden High: consumption ≥ 30% above average
     if (currentConsumption >= avgPrev * 1.30) {
       anomalies.push({
-        account_id: account.account_id,
-        account_number: account.account_id,
-        account_name: account.account_name || '',
+        accountnumber: account.account_id,
+        name: account.account_name || '',
+        meterno: account.meter_no || '',
         address: account.address || '',
         anomaly_type: 'sudden_high',
         severity: deviationPercent >= 100 ? 'critical' : deviationPercent >= 50 ? 'high' : 'medium',
@@ -239,9 +239,9 @@ export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) 
     // Sudden Down: consumption ≤ 30% below average
     else if (currentConsumption <= avgPrev * 0.70) {
       anomalies.push({
-        account_id: account.account_id,
-        account_number: account.account_id,
-        account_name: account.account_name || '',
+        accountnumber: account.account_id,
+        name: account.account_name || '',
+        meterno: account.meter_no || '',
         address: account.address || '',
         anomaly_type: 'sudden_down',
         severity: deviationPercent <= -70 ? 'critical' : deviationPercent <= -50 ? 'high' : 'medium',
