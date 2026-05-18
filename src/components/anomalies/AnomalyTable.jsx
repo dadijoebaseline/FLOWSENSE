@@ -54,7 +54,7 @@ export default function AnomalyTable({ anomalies }) {
     (async () => {
       setHistLoading(true);
       try {
-        const h = await staticDataService.getAccountHistory(selected.accountNumber, 3);
+        const h = await staticDataService.getAccountHistory(selected.accountId, 3);
         if (mounted) setHistory(h);
       } catch (e) {
         // ignore
