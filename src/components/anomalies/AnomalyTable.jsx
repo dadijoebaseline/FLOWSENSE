@@ -50,12 +50,16 @@ export default function AnomalyTable({ anomalies }) {
 
   useEffect(() => {
     let mounted = true;
+    console.log('DEBUG: useEffect triggered, selected:', selected);
     if (!selected) return () => { mounted = false };
     (async () => {
       setHistLoading(true);
       try {
         const h = await staticDataService.getAccountHistory(selected.accountId, 3);
-        if (mounted) setHistory(h);
+        if (mounted) {
+          console.log('DEBUG: Account history for trend', selected.accountId, h);
+          setHistory(h);
+        }
       } catch (e) {
         // ignore
       } finally {
@@ -66,6 +70,7 @@ export default function AnomalyTable({ anomalies }) {
   }, [selected]);
 
   function openDetails(anomaly) {
+    console.log('DEBUG: openDetails called with anomaly:', anomaly);
     setSelected(anomaly);
     setDialogOpen(true);
   }
