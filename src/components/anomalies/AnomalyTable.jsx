@@ -331,7 +331,14 @@ export default function AnomalyTable({ anomalies }) {
                       <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} width={32} />
                       <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                       <Tooltip contentStyle={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 8, fontSize: 12, color: '#e2e8f0' }} />
-                      <Area type="monotone" dataKey="consumption" stroke="#38bdf8" fill="url(#colorCons)" strokeWidth={2} dot={{ r: 3 }} />
+                      <Area 
+                        type="monotone"
+                        dataKey="consumption"
+                        stroke="#38bdf8"
+                        fill="url(#colorCons)"
+                        strokeWidth={2}
+                        dot={{ r: 3 }}
+                      />
                     </AreaChart>
                   </ChartContainer>
                 ) : (
