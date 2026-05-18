@@ -171,7 +171,10 @@ export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) 
 
   for (const account of currentAccounts) {
     if (!account.account_id) continue;
-    const currentCumUsed = Number(account.cum_used || 0);
+    // If cum_used is null or undefined, handle special cases
+    let currentCumUsed = account.cum_used;
+    const isCumUsedNull = currentCumUsed === null || currentCumUsed === undefined || isNaN(Number(currentCumUsed));
+    const status = (account.status || '').toLowerCase();
     const history = historyMap[account.account_id] || [];
 
     if (history.length === 0) {
@@ -194,9 +197,21 @@ export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) 
       continue;
     }
 
-    // Compute this month's consumption as difference from last month's cum_used
-    const lastCumUsed = history.length > 0 ? history[history.length - 1] : 0;
-    const currentConsumption = currentCumUsed - lastCumUsed;
+    let currentConsumption;
+    if (isCumUsedNull) {
+      // If disconnected, skip anomaly detection for this account
+      if (status === 'disconnected') {
+        skipped_zero_current++;
+        continue;
+      }
+      // Not yet read: estimate using last 3 months' average consumption
+      const last3 = monthlyConsumptions.slice(-3);
+      currentConsumption = last3.length > 0 ? last3.reduce((a, b) => a + b, 0) / last3.length : 0;
+    } else {
+      // Compute this month's consumption as difference from last month's cum_used
+      const lastCumUsed = history.length > 0 ? history[history.length - 1] : 0;
+      currentConsumption = Number(currentCumUsed) - lastCumUsed;
+    }
 
     if (currentConsumption === 0 && avgPrev > 0) {
       anomalies.push({
