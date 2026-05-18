@@ -1,0 +1,54 @@
+Objective:  
+Analyze the existing GeoJSON files in D:\APPS\FLOWSENSE\public\data. Then create a Python script that fetches and saves GeoJSON data from the PostgreSQL database fieldofficesync, table qgis_full_inventory, ensuring the schema and structure of the new files exactly match the existing ones.
+
+Requirements:
+
+Target Dates:
+
+Fetch the last day of the previous 3 months.
+
+Fetch the previous day of the current date.
+
+Example (today = 2026-05-14):
+
+2026-02-28 → save as 2026-02.geojson
+
+2026-03-31 → save as 2026-03.geojson
+
+2026-04-30 → save as 2026-04.geojson
+
+2026-05-13 → save as 2026-05.geojson
+
+Tomorrow (2026-05-15), overwrite the current month file:
+
+2026-05-14 → saved as 2026-05.geojson (replaces 2026-05-13.geojson)
+
+Continue overwriting daily until the last day of the month.
+
+File Management:
+
+The folder must always contain exactly 4 GeoJSON files.
+
+When a new month begins, delete the oldest month’s file automatically.
+
+Database Connection:
+
+Database: fieldofficesync
+
+Table: qgis_full_inventory
+
+Host: 199.168.6.100
+
+Port: 3448
+
+User: postgres
+
+Password: tcwddatabase
+
+Output Location:
+
+Save files in D:\APPS\FLOWSENSE\public\data.
+
+Schema Consistency:
+
+Ensure the structure and schema of the new GeoJSON files are identical to the existing ones in the folder.

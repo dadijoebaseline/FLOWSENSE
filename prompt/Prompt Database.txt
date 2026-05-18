@@ -1,0 +1,136 @@
+Prompt: Fresh Export Script for GeoJSON Sync (qgis_main + tcwd_billing)
+Objective:  
+Wipe the existing export script and start a fresh one. Analyze the current GeoJSON files in D:\APPS\FLOWSENSE\public\data and create a Python script that fetches and saves GeoJSON data from the PostgreSQL database fieldofficesync, joining data from qgis_main and tcwd_billing. The new files must exactly match the schema and structure of the existing ones.
+
+Requirements
+Target Dates Logic:
+
+Fetch the last day of the previous 3 months.
+
+Fetch the previous day of the current date.
+
+Example (today = 2026-05-18):
+
+2026-02-28 → save as 2026-02.geojson
+
+2026-03-31 → save as 2026-03.geojson
+
+2026-04-30 → save as 2026-04.geojson
+
+2026-05-17 → save as 2026-05.geojson
+
+Tomorrow (2026-05-19), overwrite the current month file:
+
+2026-05-18 → saved as 2026-05.geojson (replaces 2026-05-17.geojson)
+
+Continue overwriting daily until the last day of the month.
+
+File Management:
+
+The folder must always contain exactly 4 GeoJSON files.
+
+When a new month begins, delete the oldest month’s file automatically.
+
+Database Connection:
+
+Database: fieldofficesync
+
+Tables: qgis_main, tcwd_billing
+
+Host: 199.168.6.100
+SQL Filtering Instructions (as of 2026-05-18):
+
+To fetch data for a specific month and year, use the following WHERE clause in your SQL queries:
+
+	WHERE sync_month = <month_number> AND sync_year = <year_number>
+
+For example, to fetch data for March 2026:
+
+	WHERE sync_month = 3 AND sync_year = 2026
+
+This logic is used in the export script to ensure each GeoJSON file contains only the records for the corresponding month and year.
+
+Port: 3448
+
+User: postgres
+
+Password: tcwddatabase
+
+Output Location:
+
+Save files in D:\APPS\FLOWSENSE\public\data.
+
+Schema Consistency:
+
+Ensure the structure and schema of the new GeoJSON files are identical to the existing ones in the folder.
+
+Data Logic
+Step 1: Fetch Columns from qgis_main
+
+ogc_fid (integer)
+
+wkb_geometry (USER-DEFINED)
+
+fid (numeric)
+
+remarks (character varying)
+
+comments (character varying)
+
+type (character varying)
+
+accountnumber (character varying)
+
+area (character varying)
+
+longitude (double precision)
+
+latitude (double precision)
+
+nearest meter (character varying)
+
+name (character varying)
+
+address (text)
+
+meterno (character varying)
+
+bookno (character varying)
+
+ratecode (character varying)
+
+status (character varying)
+
+cellphone (character varying)
+
+seqno (numeric)
+
+Step 2: Join with tcwd_billing Columns
+
+prvreading (character varying)
+
+prsreading (character varying)
+
+cumused (character varying)
+
+billamount (numeric)
+
+year (numeric)
+
+month (numeric)
+
+Join Condition:
+
+Join on accountnumber where values match.
+
+Step 3: Historical Data
+
+Use year and month columns from tcwd_billing to filter records for:
+
+Last day of the previous 3 months
+
+Previous day of the current date
+
+Step 4: Schema Alignment
+
+Ensure the exported GeoJSON files preserve the same schema and structure as the existing files in D:\APPS\FLOWSENSE\public\data.
