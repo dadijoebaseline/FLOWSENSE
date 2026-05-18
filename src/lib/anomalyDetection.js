@@ -90,13 +90,13 @@ export function parseGeoJSON(geojsonData, datasetLabel = '') {
     const lng = Number(coords[0]);
     const lat = Number(coords[1]);
 
-    const rawId = props.AccountNumber || props.account_id || props.ogc_fid || props.MeterNo || '';
+    const rawId = props.accountnumber || props.AccountNumber || props.account_id || props.ogc_fid || props.meterno || props.MeterNo || '';
     const accountId = rawId ? String(rawId).trim().replace(/\s+/g, '').replace(/[^A-Za-z0-9_-]/g, '').toUpperCase() : null;
 
     // Monthly consumption = present reading - previous reading
     // (This is more reliable than cumused field which may be unreliable)
-    const prv_reading = Number(props.PRVReading ?? props.prvreading ?? props.prv_reading) || 0;
-    const prs_reading = Number(props.PRSReading ?? props.prsreading ?? props.prs_reading) || 0;
+    const prv_reading = Number(props.prvreading ?? props.PRVReading ?? props.prv_reading) || 0;
+    const prs_reading = Number(props.prsreading ?? props.PRSReading ?? props.prs_reading) || 0;
     const consumption_this_month = prs_reading - prv_reading;
     
     // Fallback to cumused if meter readings not available
@@ -125,13 +125,13 @@ export function parseGeoJSON(geojsonData, datasetLabel = '') {
 
     accounts.push({
       account_id: accountId,
-      account_name: props.Name || props.account_name || '',
-      address: props.Address || props.address || '',
-      area: props.AREA || '',
-      meter_no: props.MeterNo || '',
-      book_no: props.BookNo || '',
-      rate_code: props.RateCode || '',
-      status: props.Status || '',
+      account_name: props.name || props.Name || props.account_name || '',
+      address: props.address || props.Address || '',
+      area: props.area || props.AREA || '',
+      meter_no: props.meterno || props.MeterNo || '',
+      book_no: props.bookno || props.BookNo || '',
+      rate_code: props.ratecode || props.RateCode || '',
+      status: props.status || props.Status || '',
       prv_reading: prv_reading,
       prs_reading: prs_reading,
       cum_used,  // Now represents: prs_reading - prv_reading (monthly consumption)
