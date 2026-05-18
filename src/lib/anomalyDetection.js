@@ -93,7 +93,14 @@ export function parseGeoJSON(geojsonData, datasetLabel = '') {
     const rawId = props.AccountNumber || props.account_id || props.ogc_fid || props.MeterNo || '';
     const accountId = rawId ? String(rawId).trim().replace(/\s+/g, '').replace(/[^A-Za-z0-9_-]/g, '').toUpperCase() : null;
 
-    const cum_used = Number(props.CumUsed ?? props.cum_used ?? props.Cum_Used) || 0;
+    // Monthly consumption = present reading - previous reading
+    // (This is more reliable than cumused field which may be unreliable)
+    const prv_reading = Number(props.PRVReading ?? props.prvreading ?? props.prv_reading) || 0;
+    const prs_reading = Number(props.PRSReading ?? props.prsreading ?? props.prs_reading) || 0;
+    const consumption_this_month = prs_reading - prv_reading;
+    
+    // Fallback to cumused if meter readings not available
+    const cum_used = consumption_this_month > 0 ? consumption_this_month : (Number(props.CumUsed ?? props.cum_used ?? props.Cum_Used) || 0);
 
     const warnings = [];
 
@@ -125,9 +132,9 @@ export function parseGeoJSON(geojsonData, datasetLabel = '') {
       book_no: props.BookNo || '',
       rate_code: props.RateCode || '',
       status: props.Status || '',
-      prv_reading: Number(props.PRVReading) || 0,
-      prs_reading: Number(props.PRSReading) || 0,
-      cum_used,
+      prv_reading: prv_reading,
+      prs_reading: prs_reading,
+      cum_used,  // Now represents: prs_reading - prv_reading (monthly consumption)
       bill_amount: Number(props.BillAmount) || 0,
       year: props.Year || null,
       month: props.Month || '',
@@ -152,44 +159,39 @@ export function parseGeoJSON(geojsonData, datasetLabel = '') {
 export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) {
   const anomalies = [];
 
-  // Build a lookup: accountId -> array of historical cum_used values (chronological)
+  // Build a lookup: accountId -> array of monthly consumption values (chronological)
   const historyMap = {};
   for (const acc of historicalAccounts) {
     if (!acc.account_id) continue;
     if (!historyMap[acc.account_id]) historyMap[acc.account_id] = [];
+    // cum_used now represents monthly consumption (prs_reading - prv_reading)
     historyMap[acc.account_id].push(Number(acc.cum_used || 0));
   }
 
+  let skipped_no_history = 0;
+  let skipped_zero_avg = 0;
+  let skipped_zero_current = 0;
+  let flagged_anomalies = 0;
+
   for (const account of currentAccounts) {
     if (!account.account_id) continue;
-    const currentReading = Number(account.cum_used || 0);
+    const currentConsumption = Number(account.cum_used || 0);
     const history = historyMap[account.account_id] || [];
 
-    if (history.length === 0) continue; // no history to compare
-
-    const prevReading = history[history.length - 1];
-
-    // Compute current consumption as delta from last historical cumulative reading
-    let currentConsumption = currentReading - prevReading;
-    let usedFallback = false;
-    if (currentConsumption < 0) {
-      // Possible meter rollover or data issue; fallback to using currentReading as consumption
-      usedFallback = true;
-      currentConsumption = currentReading;
+    if (history.length === 0) {
+      skipped_no_history++;
+      continue;
     }
 
-    // Compute average previous consumption from historical diffs if available
-    const diffs = [];
-    for (let i = 1; i < history.length; i++) {
-      const d = history[i] - history[i - 1];
-      if (d > 0) diffs.push(d);
+    // Compute average consumption from all historical months
+    const avgPrev = history.length > 0 ? history.reduce((a, b) => a + b, 0) / history.length : 0;
+
+    // If we can't compute an average or all history is zero, skip
+    if (avgPrev === 0) {
+      skipped_zero_avg++;
+      continue;
     }
-    const avgPrev = diffs.length > 0 ? diffs.reduce((a, b) => a + b, 0) / diffs.length : null;
 
-    // If we can't compute an average previous consumption, skip anomaly detection for now
-    if (avgPrev === null || avgPrev === 0) continue;
-
-    // Zero Consumption: had history but now zero consumption
     if (currentConsumption === 0 && avgPrev > 0) {
       anomalies.push({
         account_id: account.account_id,
@@ -204,6 +206,12 @@ export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) 
         longitude: account.longitude,
         dataset_id: account.dataset_id,
       });
+      flagged_anomalies++;
+      continue;
+    }
+
+    if (currentConsumption === 0) {
+      skipped_zero_current++;
       continue;
     }
 
@@ -223,8 +231,8 @@ export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) 
         latitude: account.latitude,
         longitude: account.longitude,
         dataset_id: account.dataset_id,
-        _meta: usedFallback ? { note: 'used fallback consumption (possible meter reset)' } : undefined,
       });
+      flagged_anomalies++;
     }
     // Sudden Down: consumption ≤ 30% below average
     else if (currentConsumption <= avgPrev * 0.70) {
@@ -241,8 +249,11 @@ export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) 
         longitude: account.longitude,
         dataset_id: account.dataset_id,
       });
+      flagged_anomalies++;
     }
   }
+
+  console.log(`[detectAnomaliesWithHistory] Processed ${currentAccounts.length} accounts. Flagged: ${flagged_anomalies}, Skipped (no history): ${skipped_no_history}, Skipped (zero avg): ${skipped_zero_avg}, Skipped (zero current): ${skipped_zero_current}`);
 
   return anomalies;
 }

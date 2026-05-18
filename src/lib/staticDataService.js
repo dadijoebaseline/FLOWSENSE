@@ -1,6 +1,7 @@
 import { detectAnomaliesWithHistory, parseGeoJSON } from './anomalyDetection';
 
 const AVAILABLE_DATASETS = [
+  { id: '2026-02', name: 'February 2026', month_label: '2026-02', file: '2026-02.geojson' },
   { id: '2026-03', name: 'March 2026', month_label: '2026-03', file: '2026-03.geojson' },
   { id: '2026-04', name: 'April 2026', month_label: '2026-04', file: '2026-04.geojson' },
   { id: '2026-05', name: 'May 2026', month_label: '2026-05', file: '2026-05.geojson' },
@@ -111,9 +112,17 @@ export const staticDataService = {
 
     for (const month of months) {
       const currentAccounts = allAccounts.filter(account => account.dataset_id === month);
+      console.log(`[getAnomalies] Month ${month}: ${currentAccounts.length} current accounts, ${historicalAccounts.length} historical accounts`);
       const monthAnomalies = detectAnomaliesWithHistory(currentAccounts, historicalAccounts);
+      console.log(`[getAnomalies] Month ${month}: Detected ${monthAnomalies.length} anomalies`);
       anomalies.push(...monthAnomalies);
       historicalAccounts.push(...currentAccounts);
+    }
+
+    // Explicit runtime log for confirmation
+    console.log('[getAnomalies] Total calculated anomalies:', anomalies.length);
+    if (anomalies.length > 0) {
+      console.log('[getAnomalies] Sample anomalies:', anomalies.slice(0, 3));
     }
 
     return anomalies;
