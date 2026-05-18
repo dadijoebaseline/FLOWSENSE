@@ -2,11 +2,11 @@
   "name": "Anomaly",
   "type": "object",
   "properties": {
-    "account_id": {
+    "accountId": {
       "type": "string",
-      "description": "Reference to WaterAccount account_id"
+      "description": "Reference to WaterAccount accountId"
     },
-    "account_name": {
+    "accountName": {
       "type": "string",
       "description": "Account holder name"
     },
@@ -14,7 +14,7 @@
       "type": "string",
       "description": "Account address"
     },
-    "anomaly_type": {
+    "anomalyType": {
       "type": "string",
       "enum": [
         "sudden_high",
@@ -34,15 +34,15 @@
       "default": "medium",
       "description": "Severity level"
     },
-    "average_consumption": {
+    "averageConsumption": {
       "type": "number",
       "description": "Average consumption over prior months (cu.m.)"
     },
-    "current_consumption": {
+    "currentConsumption": {
       "type": "number",
       "description": "Current month consumption (cu.m.)"
     },
-    "deviation_percent": {
+    "deviationPercent": {
       "type": "number",
       "description": "Percentage deviation from average"
     },
@@ -54,17 +54,17 @@
       "type": "number",
       "description": "Longitude coordinate"
     },
-    "dataset_id": {
+    "datasetId": {
       "type": "string",
       "description": "Reference to the parent WaterDataset"
     },
-    "month_label": {
+    "monthLabel": {
       "type": "string",
       "description": "Month when anomaly was detected"
     }
   },
   "required": [
-    "account_id",
-    "anomaly_type"
+    "accountId",
+    "anomalyType"
   ]
 }

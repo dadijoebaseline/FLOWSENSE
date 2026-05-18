@@ -22,9 +22,9 @@ export default function Dashboard() {
     queryFn: () => staticDataService.getDatasets(),
   });
 
-  const suddenHigh = anomalies.filter(a => a.anomaly_type === 'sudden_high').length;
-  const zeroCons = anomalies.filter(a => a.anomaly_type === 'zero_consumption').length;
-  const suddenDown = anomalies.filter(a => a.anomaly_type === 'sudden_down').length;
+  const suddenHigh = anomalies.filter(a => a.anomalyType === 'sudden_high').length;
+  const zeroCons = anomalies.filter(a => a.anomalyType === 'zero_consumption').length;
+  const suddenDown = anomalies.filter(a => a.anomalyType === 'sudden_down').length;
   const critical = anomalies.filter(a => a.severity === 'critical').length;
 
   if (isLoading) {

@@ -49,11 +49,11 @@ export default function AnomalyMap({ anomalies, height = '500px' }) {
             url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
           />
           {validAnomalies.map((anomaly, i) => {
-            const color = ANOMALY_COLORS[anomaly.anomaly_type] || '#6b7280';
+            const color = ANOMALY_COLORS[anomaly.anomalyType] || '#6b7280';
             const radius = severityRadius[anomaly.severity] || 8;
             return (
               <CircleMarker
-                key={anomaly.id || i}
+                key={anomaly.accountNumber || i}
                 center={[anomaly.latitude, anomaly.longitude]}
                 radius={radius}
                 pathOptions={{
@@ -67,7 +67,7 @@ export default function AnomalyMap({ anomalies, height = '500px' }) {
                 <Popup maxWidth={220}>
                   <div style={{ padding: '14px 16px', fontFamily: 'Inter, sans-serif' }}>
                     <p style={{ fontWeight: 700, fontSize: 13, color: '#f1f5f9', marginBottom: 8, fontFamily: 'Space Grotesk, sans-serif' }}>
-                      {anomaly.account_name || anomaly.account_id}
+                      {anomaly.accountName || anomaly.accountNumber}
                     </p>
                     {anomaly.address && (
                       <p style={{ fontSize: 11, color: '#64748b', marginBottom: 10 }}>{anomaly.address}</p>
@@ -75,20 +75,20 @@ export default function AnomalyMap({ anomalies, height = '500px' }) {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: 11, color: '#64748b' }}>Type</span>
-                        <span style={{ fontSize: 11, color: color, fontWeight: 600 }}>{ANOMALY_LABELS[anomaly.anomaly_type]}</span>
+                        <span style={{ fontSize: 11, color: color, fontWeight: 600 }}>{ANOMALY_LABELS[anomaly.anomalyType]}</span>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: 11, color: '#64748b' }}>Avg</span>
-                        <span style={{ fontSize: 11, color: '#94a3b8' }}>{anomaly.average_consumption} cu.m.</span>
+                        <span style={{ fontSize: 11, color: '#94a3b8' }}>{anomaly.averageConsumption} cu.m.</span>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: 11, color: '#64748b' }}>Current</span>
-                        <span style={{ fontSize: 11, color: '#94a3b8' }}>{anomaly.current_consumption} cu.m.</span>
+                        <span style={{ fontSize: 11, color: '#94a3b8' }}>{anomaly.currentConsumption} cu.m.</span>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: 11, color: '#64748b' }}>Deviation</span>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: anomaly.deviation_percent > 0 ? '#f87171' : '#38bdf8' }}>
-                          {anomaly.deviation_percent > 0 ? '+' : ''}{anomaly.deviation_percent}%
+                        <span style={{ fontSize: 11, fontWeight: 700, color: anomaly.deviationPercent > 0 ? '#f87171' : '#38bdf8' }}>
+                          {anomaly.deviationPercent > 0 ? '+' : ''}{anomaly.deviationPercent}%
                         </span>
                       </div>
                     </div>

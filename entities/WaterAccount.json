@@ -2,11 +2,11 @@
   "name": "WaterAccount",
   "type": "object",
   "properties": {
-    "account_id": {
+    "accountId": {
       "type": "string",
       "description": "AccountNumber from GeoJSON"
     },
-    "account_name": {
+    "accountName": {
       "type": "string",
       "description": "Name field from GeoJSON"
     },
@@ -18,15 +18,15 @@
       "type": "string",
       "description": "AREA field from GeoJSON"
     },
-    "meter_no": {
+    "meterNo": {
       "type": "string",
       "description": "MeterNo from GeoJSON"
     },
-    "book_no": {
+    "bookNo": {
       "type": "string",
       "description": "BookNo from GeoJSON"
     },
-    "rate_code": {
+    "rateCode": {
       "type": "string",
       "description": "RateCode from GeoJSON"
     },
@@ -34,22 +34,22 @@
       "type": "string",
       "description": "Status from GeoJSON"
     },
-    "prv_reading": {
+    "prvReading": {
       "type": "number",
       "default": 0,
       "description": "Previous meter reading (PRVReading)"
     },
-    "prs_reading": {
+    "prsReading": {
       "type": "number",
       "default": 0,
       "description": "Present meter reading (PRSReading)"
     },
-    "cum_used": {
+    "cumUsed": {
       "type": "number",
       "default": 0,
       "description": "Cubic meters used this month (CumUsed)"
     },
-    "bill_amount": {
+    "billAmount": {
       "type": "number",
       "default": 0,
       "description": "Bill amount for this month"
@@ -70,7 +70,7 @@
       "type": "number",
       "description": "Longitude coordinate"
     },
-    "dataset_id": {
+    "datasetId": {
       "type": "string",
       "description": "Reference to the parent WaterDataset"
     },
@@ -84,6 +84,6 @@
     }
   },
   "required": [
-    "account_id"
+    "accountId"
   ]
 }

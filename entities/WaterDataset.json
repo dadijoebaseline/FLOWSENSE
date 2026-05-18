@@ -6,11 +6,11 @@
       "type": "string",
       "description": "Name/label for this dataset upload"
     },
-    "month_label": {
+    "monthLabel": {
       "type": "string",
       "description": "Month label e.g. 2024-01, 2024-02"
     },
-    "file_url": {
+    "fileUrl": {
       "type": "string",
       "description": "URL of the uploaded GeoJSON file"
     },
@@ -25,12 +25,12 @@
       "default": "uploaded",
       "description": "Processing status"
     },
-    "total_accounts": {
+    "totalAccounts": {
       "type": "number",
       "default": 0,
       "description": "Total accounts in this dataset"
     },
-    "anomalies_found": {
+    "anomaliesFound": {
       "type": "number",
       "default": 0,
       "description": "Number of anomalies detected"
@@ -38,6 +38,6 @@
   },
   "required": [
     "name",
-    "month_label"
+    "monthLabel"
   ]
 }

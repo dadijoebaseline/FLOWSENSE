@@ -90,14 +90,14 @@ export function parseGeoJSON(geojsonData, datasetLabel = '') {
     const lng = Number(coords[0]);
     const lat = Number(coords[1]);
 
-    const rawId = props.accountnumber || props.AccountNumber || props.account_id || props.ogc_fid || props.meterno || props.MeterNo || '';
+    const rawId = props.accountNumber ?? props.accountnumber ?? props.AccountNumber ?? props.account_id ?? props.ogcFid ?? props.ogc_fid ?? props.meterNo ?? props.meterno ?? props.MeterNo ?? '';
     const accountId = rawId ? String(rawId).trim().replace(/\s+/g, '').replace(/[^A-Za-z0-9_-]/g, '').toUpperCase() : null;
 
-    // Always use cumused as the monthly usage for this month
-    const cumused = Number(props.cumused ?? props.CumUsed ?? props.cum_used ?? props.Cum_Used) || 0;
+    // Always use cumUsed as the monthly usage for this month
+    const cumUsed = Number(props.cumUsed ?? props.cumused ?? props.CumUsed ?? props.cum_used ?? props.Cum_Used) || 0;
     // Optionally, keep readings for reference
-    const prv_reading = Number(props.prvreading ?? props.PRVReading ?? props.prv_reading) || 0;
-    const prs_reading = Number(props.prsreading ?? props.PRSReading ?? props.prs_reading) || 0;
+    const prvReading = Number(props.prvReading ?? props.prvreading ?? props.PRVReading ?? props.prv_reading) || 0;
+    const prsReading = Number(props.prsReading ?? props.prsreading ?? props.PRSReading ?? props.prs_reading) || 0;
 
     const warnings = [];
 
@@ -121,23 +121,22 @@ export function parseGeoJSON(geojsonData, datasetLabel = '') {
     }
 
     accounts.push({
-      account_id: accountId,
-      account_name: props.name || props.Name || props.account_name || '',
-      address: props.address || props.Address || '',
-      area: props.area || props.AREA || '',
-      meter_no: props.meterno || props.MeterNo || '',
-      book_no: props.bookno || props.BookNo || '',
-      rate_code: props.ratecode || props.RateCode || '',
-      status: props.status || props.Status || '',
-      prv_reading: prv_reading,
-      prs_reading: prs_reading,
-      cumused, // Canonical field for monthly usage
-      cum_used: cumused, // For backward compatibility
-      bill_amount: Number(props.BillAmount) || 0,
-      year: props.Year || null,
-      month: props.Month || '',
-      remarks: props.Remarks || '',
-      type: props.Type || '',
+      accountId,
+      accountName: props.name ?? props.Name ?? props.account_name ?? '',
+      address: props.address ?? props.Address ?? '',
+      area: props.area ?? props.AREA ?? '',
+      meterNo: props.meterNo ?? props.meterno ?? props.MeterNo ?? '',
+      bookNo: props.bookNo ?? props.bookno ?? props.BookNo ?? '',
+      rateCode: props.rateCode ?? props.ratecode ?? props.RateCode ?? '',
+      status: props.status ?? props.Status ?? '',
+      prvReading,
+      prsReading,
+      cumUsed, // Canonical field for monthly usage
+      billAmount: Number(props.billAmount ?? props.BillAmount) || 0,
+      year: props.year ?? props.Year ?? null,
+      month: props.month ?? props.Month ?? '',
+      remarks: props.remarks ?? props.Remarks ?? '',
+      type: props.type ?? props.Type ?? '',
       longitude: lng,
       latitude: lat,
       _warnings: warnings.length ? warnings : undefined,
@@ -160,9 +159,9 @@ export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) 
   // Build a lookup: accountId -> array of cumused values (chronological)
   const historyMap = {};
   for (const acc of historicalAccounts) {
-    if (!acc.account_id) continue;
-    if (!historyMap[acc.account_id]) historyMap[acc.account_id] = [];
-    historyMap[acc.account_id].push(Number(acc.cumused || 0));
+    if (!acc.accountId) continue;
+    if (!historyMap[acc.accountId]) historyMap[acc.accountId] = [];
+    historyMap[acc.accountId].push(Number(acc.cumUsed || 0));
   }
 
   let skipped_no_history = 0;
@@ -171,12 +170,12 @@ export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) 
   let flagged_anomalies = 0;
 
   for (const account of currentAccounts) {
-    if (!account.account_id) continue;
-    // If cumused is null or undefined, handle special cases
-    let currentCumUsed = account.cumused;
+    if (!account.accountId) continue;
+    // If cumUsed is null or undefined, handle special cases
+    let currentCumUsed = account.cumUsed;
     const isCumUsedNull = currentCumUsed === null || currentCumUsed === undefined || isNaN(Number(currentCumUsed));
     const status = (account.status || '').toLowerCase();
-    const history = historyMap[account.account_id] || [];
+    const history = historyMap[account.accountId] || [];
 
     if (history.length === 0) {
       skipped_no_history++;
@@ -227,18 +226,18 @@ export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) 
 
     if (currentConsumption === 0 && avgPrev > 0) {
       anomalies.push({
-        accountnumber: account.account_id,
-        name: account.account_name || '',
-        meterno: account.meter_no || '',
+        accountNumber: account.accountId,
+        name: account.accountName || '',
+        meterNo: account.meterNo || '',
         address: account.address || '',
-        anomaly_type: 'zero_consumption',
+        anomalyType: 'zero_consumption',
         severity: 'critical',
-        average_consumption: Math.round(avgPrev * 100) / 100,
-        current_consumption: 0,
-        deviation_percent: -100,
+        averageConsumption: Math.round(avgPrev * 100) / 100,
+        currentConsumption: 0,
+        deviationPercent: -100,
         latitude: account.latitude,
         longitude: account.longitude,
-        dataset_id: account.dataset_id,
+        datasetId: account.datasetId,
       });
       flagged_anomalies++;
       continue;
@@ -254,36 +253,36 @@ export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) 
     // Sudden High: consumption ≥ 30% above average
     if (currentConsumption >= avgPrev * 1.30) {
       anomalies.push({
-        accountnumber: account.account_id,
-        name: account.account_name || '',
-        meterno: account.meter_no || '',
+        accountNumber: account.accountId,
+        name: account.accountName || '',
+        meterNo: account.meterNo || '',
         address: account.address || '',
-        anomaly_type: 'sudden_high',
+        anomalyType: 'sudden_high',
         severity: deviationPercent >= 100 ? 'critical' : deviationPercent >= 50 ? 'high' : 'medium',
-        average_consumption: Math.round(avgPrev * 100) / 100,
-        current_consumption: Math.round(currentConsumption * 100) / 100,
-        deviation_percent: Math.round(deviationPercent * 100) / 100,
+        averageConsumption: Math.round(avgPrev * 100) / 100,
+        currentConsumption: Math.round(currentConsumption * 100) / 100,
+        deviationPercent: Math.round(deviationPercent * 100) / 100,
         latitude: account.latitude,
         longitude: account.longitude,
-        dataset_id: account.dataset_id,
+        datasetId: account.datasetId,
       });
       flagged_anomalies++;
     }
     // Sudden Down: consumption ≤ 30% below average
     else if (currentConsumption <= avgPrev * 0.70) {
       anomalies.push({
-        accountnumber: account.account_id,
-        name: account.account_name || '',
-        meterno: account.meter_no || '',
+        accountNumber: account.accountId,
+        name: account.accountName || '',
+        meterNo: account.meterNo || '',
         address: account.address || '',
-        anomaly_type: 'sudden_down',
+        anomalyType: 'sudden_down',
         severity: deviationPercent <= -70 ? 'critical' : deviationPercent <= -50 ? 'high' : 'medium',
-        average_consumption: Math.round(avgPrev * 100) / 100,
-        current_consumption: Math.round(currentConsumption * 100) / 100,
-        deviation_percent: Math.round(deviationPercent * 100) / 100,
+        averageConsumption: Math.round(avgPrev * 100) / 100,
+        currentConsumption: Math.round(currentConsumption * 100) / 100,
+        deviationPercent: Math.round(deviationPercent * 100) / 100,
         latitude: account.latitude,
         longitude: account.longitude,
-        dataset_id: account.dataset_id,
+        datasetId: account.datasetId,
       });
       flagged_anomalies++;
     }

@@ -54,7 +54,7 @@ export default function AnomalyTable({ anomalies }) {
     (async () => {
       setHistLoading(true);
       try {
-        const h = await staticDataService.getAccountHistory(selected.account_id, 3);
+        const h = await staticDataService.getAccountHistory(selected.accountNumber, 3);
         if (mounted) setHistory(h);
       } catch (e) {
         // ignore
@@ -78,9 +78,9 @@ export default function AnomalyTable({ anomalies }) {
   const filtered = anomalies.filter(a => {
     const matchSearch = !search ||
       (a.name || '').toLowerCase().includes(search.toLowerCase()) ||
-      (a.accountnumber || '').toLowerCase().includes(search.toLowerCase()) ||
+      (a.accountNumber || '').toLowerCase().includes(search.toLowerCase()) ||
       (a.address || '').toLowerCase().includes(search.toLowerCase());
-    const matchType = typeFilter === 'all' || a.anomaly_type === typeFilter;
+    const matchType = typeFilter === 'all' || a.anomalyType === typeFilter;
     const matchSeverity = severityFilter === 'all' || a.severity === severityFilter;
     return matchSearch && matchType && matchSeverity;
   });
@@ -166,14 +166,14 @@ export default function AnomalyTable({ anomalies }) {
                 </tr>
               )}
               {paged.map((anomaly, i) => {
-                const tc = typeConfig[anomaly.anomaly_type];
+                const tc = typeConfig[anomaly.anomalyType];
                 const sc = severityConfig[anomaly.severity];
                 const Icon = tc?.icon || Minus;
-                const isPos = anomaly.deviation_percent > 0;
+                const isPos = anomaly.deviationPercent > 0;
 
                 return (
                   <motion.tr
-                    key={anomaly.accountnumber || i}
+                    key={anomaly.accountNumber || i}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: i * 0.02 }}
@@ -184,11 +184,11 @@ export default function AnomalyTable({ anomalies }) {
                     onClick={() => openDetails(anomaly)}
                   >
                     <td className="px-5 py-4">
-                      <p className="font-medium text-slate-200 font-space">{anomaly.name || anomaly.accountnumber}</p>
-                      <p className="text-xs text-slate-600 mt-0.5 font-mono">{anomaly.accountnumber}</p>
+                      <p className="font-medium text-slate-200 font-space">{anomaly.name || anomaly.accountNumber}</p>
+                      <p className="text-xs text-slate-600 mt-0.5 font-mono">{anomaly.accountNumber}</p>
                     </td>
-                    <td className="px-5 py-4 text-slate-500 text-sm hidden md:table-cell">{anomaly.meterno || '—'}</td>
-                    <td className="px-5 py-4 text-slate-500 text-sm hidden md:table-cell">{anomaly.address || '—'}</td>
+                    <td className="px-5 py-4 text-slate-500 text-sm hidden md:table-cell">{anomaly.meterNo || '\u2014'}</td>
+                    <td className="px-5 py-4 text-slate-500 text-sm hidden md:table-cell">{anomaly.address || '\u2014'}</td>
                     <td className="px-5 py-4">
                       {tc && (
                         <div
@@ -200,11 +200,11 @@ export default function AnomalyTable({ anomalies }) {
                         </div>
                       )}
                     </td>
-                    <td className="px-5 py-4 text-slate-400 tabular-nums hidden sm:table-cell">{anomaly.average_consumption}</td>
-                    <td className="px-5 py-4 text-slate-400 tabular-nums hidden sm:table-cell">{anomaly.current_consumption}</td>
+                    <td className="px-5 py-4 text-slate-400 tabular-nums hidden sm:table-cell">{anomaly.averageConsumption}</td>
+                    <td className="px-5 py-4 text-slate-400 tabular-nums hidden sm:table-cell">{anomaly.currentConsumption}</td>
                     <td className="px-5 py-4">
                       <span className={`text-sm font-semibold tabular-nums font-space ${isPos ? 'text-red-400' : 'text-sky-400'}`}>
-                        {isPos ? '+' : ''}{anomaly.deviation_percent}%
+                        {isPos ? '+' : ''}{anomaly.deviationPercent}%
                       </span>
                     </td>
                     <td className="px-5 py-4">

@@ -8,8 +8,12 @@ const AVAILABLE_DATASETS = [
 ];
 
 const datasetStatus = 'completed';
+/** @type {{file: string, error: string}[]} */
 const loadErrors = [];
 
+/**
+ * @param {string} fileName
+ */
 async function fetchGeoJSONFile(fileName) {
   try {
     const response = await fetch(`/data/${fileName}`);
@@ -19,21 +23,30 @@ async function fetchGeoJSONFile(fileName) {
     return await response.json();
   } catch (error) {
     console.error(`Error fetching GeoJSON file ${fileName}:`, error);
-    const err = { file: fileName, error: String(error?.message || error) };
+    let errorMsg = '';
+    if (error && typeof error === 'object' && 'message' in error) {
+      errorMsg = String(error.message);
+    } else {
+      errorMsg = String(error);
+    }
+    const err = { file: fileName, error: errorMsg };
     loadErrors.push(err);
     return { features: [], __error: err.error };
   }
 }
 
+/**
+ * @param {{id: string, name: string, month_label: string, file: string}} dataset
+ */
 async function loadDatasetAccounts(dataset) {
   const geojson = await fetchGeoJSONFile(dataset.file);
   const accounts = parseGeoJSON(geojson, dataset.month_label);
 
   return accounts
-    .filter(a => a && a.account_id)
+    .filter(a => a && a.accountId)
     .map(account => ({
       ...account,
-      dataset_id: dataset.id,
+      datasetId: dataset.id,
     }));
 }
 
@@ -42,6 +55,9 @@ async function loadAllAccounts() {
   return accountLists.flat();
 }
 
+/**
+ * @param {string[]} months
+ */
 function sortMonths(months) {
   return [...months].sort((a, b) => a.localeCompare(b));
 }
@@ -51,24 +67,29 @@ export const staticDataService = {
      * Returns the last N months of consumption for an account as an array:
      * [ { month: '2026-03', consumption: ... }, ... ]
      */
-    async getAccountHistory(account_id, months = 3) {
+    /**
+     * @param {string} accountId
+     * @param {number} [months=3]
+     */
+    async getAccountHistory(accountId, months = 3) {
       // Load all accounts from all datasets
       const allAccounts = await loadAllAccounts();
       // Sort datasets by month ascending
       const sortedDatasets = sortMonths(AVAILABLE_DATASETS.map(d => d.id));
-      // Build a map of dataset_id -> account record
+      // Build a map of datasetId -> account record
+      /** @type {Record<string, any>} */
       const accountMap = {};
       for (const acc of allAccounts) {
-        if (acc.account_id === account_id) {
-          accountMap[acc.dataset_id] = acc;
+        if (acc.accountId === accountId) {
+          accountMap[acc.datasetId] = acc;
         }
       }
-      // Use cumused as the monthly consumption directly (not cumulative)
+      // Use cumUsed as the monthly consumption directly (not cumulative)
       const trend = sortedDatasets.map(month => {
         const acc = accountMap[month];
         return {
           month,
-          consumption: acc && acc.cum_used != null ? Number(acc.cum_used) : null,
+          consumption: acc && acc.cumUsed != null ? Number(acc.cumUsed) : null,
         };
       });
       // If not enough data, pad with nulls at the start
@@ -87,9 +108,9 @@ export const staticDataService = {
       return {
         ...dataset,
         status: datasetStatus,
-        total_accounts: allAccounts.filter(account => account.dataset_id === dataset.id).length,
-        anomalies_found: anomalies.filter(anomaly => anomaly.dataset_id === dataset.id).length,
-        load_error: err ? err.error : null,
+        totalAccounts: allAccounts.filter(account => account.datasetId === dataset.id).length,
+        anomaliesFound: anomalies.filter(anomaly => anomaly.datasetId === dataset.id).length,
+        loadError: err ? err.error : null,
       };
     });
   },
@@ -102,7 +123,7 @@ export const staticDataService = {
     const anomalies = [];
 
     for (const month of months) {
-      const currentAccounts = allAccounts.filter(account => account.dataset_id === month);
+      const currentAccounts = allAccounts.filter(account => account.datasetId === month);
       console.log(`[getAnomalies] Month ${month}: ${currentAccounts.length} current accounts, ${historicalAccounts.length} historical accounts`);
       const monthAnomalies = detectAnomaliesWithHistory(currentAccounts, historicalAccounts);
       console.log(`[getAnomalies] Month ${month}: Detected ${monthAnomalies.length} anomalies`);
@@ -119,6 +140,9 @@ export const staticDataService = {
     return anomalies;
   },
 
+  /**
+   * @param {string} month
+   */
   async getGeoJSONData(month) {
     const dataset = AVAILABLE_DATASETS.find(item => item.id === month);
     if (!dataset) {

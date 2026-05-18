@@ -17,7 +17,7 @@ export default function MapView() {
 
   const filtered = typeFilter === 'all'
     ? anomalies
-    : anomalies.filter(a => a.anomaly_type === typeFilter);
+    : anomalies.filter(a => a.anomalyType === typeFilter);
 
   if (isLoading) {
     return (
