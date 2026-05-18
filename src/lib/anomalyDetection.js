@@ -195,6 +195,7 @@ export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) 
     if (currentConsumption === 0 && avgPrev > 0) {
       anomalies.push({
         account_id: account.account_id,
+        account_number: account.account_id,
         account_name: account.account_name || '',
         address: account.address || '',
         anomaly_type: 'zero_consumption',
@@ -221,6 +222,7 @@ export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) 
     if (currentConsumption >= avgPrev * 1.30) {
       anomalies.push({
         account_id: account.account_id,
+        account_number: account.account_id,
         account_name: account.account_name || '',
         address: account.address || '',
         anomaly_type: 'sudden_high',
@@ -238,6 +240,7 @@ export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) 
     else if (currentConsumption <= avgPrev * 0.70) {
       anomalies.push({
         account_id: account.account_id,
+        account_number: account.account_id,
         account_name: account.account_name || '',
         address: account.address || '',
         anomaly_type: 'sudden_down',
