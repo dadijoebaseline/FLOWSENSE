@@ -279,15 +279,15 @@ export default function AnomalyTable({ anomalies }) {
                 <DialogTitle>Account Details</DialogTitle>
                 <DialogDescription>
                   <div className="mt-2 mb-3">
-                    <div className="font-semibold text-base text-slate-200">{selected.name || selected.accountnumber}</div>
-                    <div className="text-xs text-slate-500 font-mono">Account: {selected.accountnumber}</div>
-                    {selected.meterno && <div className="text-xs text-slate-500 font-mono">Meter: {selected.meterno}</div>}
+                    <div className="font-semibold text-base text-slate-200">{selected.name || selected.accountId}</div>
+                    <div className="text-xs text-slate-500 font-mono">Account: {selected.accountId}</div>
+                    {selected.meterNo && <div className="text-xs text-slate-500 font-mono">Meter: {selected.meterNo}</div>}
                     {selected.address && <div className="text-xs text-slate-400 mt-1">{selected.address}</div>}
                   </div>
                   <div className="flex gap-4 mb-2">
                     <div>
                       <span className="text-xs text-slate-500">Type: </span>
-                      <span className="font-medium text-slate-300">{ANOMALY_LABELS[selected.anomaly_type]}</span>
+                      <span className="font-medium text-slate-300">{ANOMALY_LABELS[selected.anomalyType]}</span>
                     </div>
                     <div>
                       <span className="text-xs text-slate-500">Severity: </span>
@@ -297,19 +297,19 @@ export default function AnomalyTable({ anomalies }) {
                   <div className="flex gap-4 mb-2">
                     <div>
                       <span className="text-xs text-slate-500">Avg: </span>
-                      <span className="font-medium text-slate-300">{selected.average_consumption} cu.m.</span>
+                      <span className="font-medium text-slate-300">{selected.averageConsumption} cu.m.</span>
                     </div>
                     <div>
                       <span className="text-xs text-slate-500">Current: </span>
                       <span className="font-medium text-slate-300">
                         {Array.isArray(history) && history.length > 0
                           ? history[history.length - 1].consumption
-                          : selected.current_consumption} cu.m.
+                          : selected.currentConsumption} cu.m.
                       </span>
                     </div>
                     <div>
                       <span className="text-xs text-slate-500">Deviation: </span>
-                      <span className={`font-medium ${selected.deviation_percent > 0 ? 'text-red-400' : 'text-sky-400'}`}>{selected.deviation_percent > 0 ? '+' : ''}{selected.deviation_percent}%</span>
+                      <span className={`font-medium ${selected.deviationPercent > 0 ? 'text-red-400' : 'text-sky-400'}`}>{selected.deviationPercent > 0 ? '+' : ''}{selected.deviationPercent}%</span>
                     </div>
                   </div>
                 </DialogDescription>
