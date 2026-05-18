@@ -71,7 +71,7 @@ export default function RecentAnomalies({ anomalies }) {
           const Icon = cfg.icon;
           return (
             <motion.div
-              key={anomaly.id || i}
+              key={anomaly.accountnumber || i}
               initial={{ opacity: 0, x: 12 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.25 + i * 0.04 }}
@@ -89,10 +89,10 @@ export default function RecentAnomalies({ anomalies }) {
 
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-slate-200 truncate leading-tight">
-                  {anomaly.account_name || anomaly.account_id}
+                  {anomaly.name || anomaly.accountnumber}
                 </p>
                 <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="text-[10px] text-slate-500 truncate">{ANOMALY_LABELS[anomaly.anomaly_type]}</span>
+                  <span className="text-[10px] text-slate-500 truncate">{anomaly.meterno ? `${anomaly.meterno} - ` : ''}{ANOMALY_LABELS[anomaly.anomaly_type]}</span>
                   <span className="text-slate-700">·</span>
                   <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md ${severityColors[anomaly.severity] || ''}`}>
                     {anomaly.severity}

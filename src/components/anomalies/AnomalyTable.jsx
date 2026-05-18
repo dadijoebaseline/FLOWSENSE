@@ -77,8 +77,8 @@ export default function AnomalyTable({ anomalies }) {
 
   const filtered = anomalies.filter(a => {
     const matchSearch = !search ||
-      (a.account_name || '').toLowerCase().includes(search.toLowerCase()) ||
-      (a.account_id || '').toLowerCase().includes(search.toLowerCase()) ||
+      (a.name || '').toLowerCase().includes(search.toLowerCase()) ||
+      (a.accountnumber || '').toLowerCase().includes(search.toLowerCase()) ||
       (a.address || '').toLowerCase().includes(search.toLowerCase());
     const matchType = typeFilter === 'all' || a.anomaly_type === typeFilter;
     const matchSeverity = severityFilter === 'all' || a.severity === severityFilter;
@@ -143,12 +143,12 @@ export default function AnomalyTable({ anomalies }) {
           <table className="w-full text-sm">
             <thead>
               <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)' }}>
-                {['Account', 'Address', 'Type', 'Avg (cu.m.)', 'Current (cu.m.)', 'Deviation', 'Severity'].map((h, i) => (
+                {['Account', 'Meter', 'Address', 'Type', 'Avg (cu.m.)', 'Current (cu.m.)', 'Deviation', 'Severity'].map((h, i) => (
                   <th
                     key={h}
                     className={`text-left px-5 py-3.5 text-[10px] font-semibold uppercase tracking-widest text-slate-500 font-space ${
-                      i === 1 ? 'hidden md:table-cell' :
-                      (i === 3 || i === 4) ? 'hidden sm:table-cell' : ''
+                      (i === 1 || i === 2) ? 'hidden md:table-cell' :
+                      (i === 4 || i === 5) ? 'hidden sm:table-cell' : ''
                     }`}
                   >
                     {h}
@@ -173,7 +173,7 @@ export default function AnomalyTable({ anomalies }) {
 
                 return (
                   <motion.tr
-                    key={anomaly.id || i}
+                    key={anomaly.accountnumber || i}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: i * 0.02 }}
@@ -184,9 +184,10 @@ export default function AnomalyTable({ anomalies }) {
                     onClick={() => openDetails(anomaly)}
                   >
                     <td className="px-5 py-4">
-                      <p className="font-medium text-slate-200 font-space">{anomaly.account_name || anomaly.account_id}</p>
-                      <p className="text-xs text-slate-600 mt-0.5 font-mono">{anomaly.account_id}</p>
+                      <p className="font-medium text-slate-200 font-space">{anomaly.name || anomaly.accountnumber}</p>
+                      <p className="text-xs text-slate-600 mt-0.5 font-mono">{anomaly.accountnumber}</p>
                     </td>
+                    <td className="px-5 py-4 text-slate-500 text-sm hidden md:table-cell">{anomaly.meterno || '—'}</td>
                     <td className="px-5 py-4 text-slate-500 text-sm hidden md:table-cell">{anomaly.address || '—'}</td>
                     <td className="px-5 py-4">
                       {tc && (
@@ -278,8 +279,9 @@ export default function AnomalyTable({ anomalies }) {
                 <DialogTitle>Account Details</DialogTitle>
                 <DialogDescription>
                   <div className="mt-2 mb-3">
-                    <div className="font-semibold text-base text-slate-200">{selected.account_name || selected.account_id}</div>
-                    <div className="text-xs text-slate-500 font-mono">{selected.account_id}</div>
+                    <div className="font-semibold text-base text-slate-200">{selected.name || selected.accountnumber}</div>
+                    <div className="text-xs text-slate-500 font-mono">Account: {selected.accountnumber}</div>
+                    {selected.meterno && <div className="text-xs text-slate-500 font-mono">Meter: {selected.meterno}</div>}
                     {selected.address && <div className="text-xs text-slate-400 mt-1">{selected.address}</div>}
                   </div>
                   <div className="flex gap-4 mb-2">
