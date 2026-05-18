@@ -64,25 +64,21 @@ export const staticDataService = {
         }
       }
       // Build an array of cumulative readings for each month (or null if missing)
-      const readings = sortedDatasets.map(month => accountMap[month] ? Number(accountMap[month].cum_used || 0) : null);
-      // Compute consumption for each month (difference from previous, or 0 if missing)
+      const readings = sortedDatasets.map(month => accountMap[month] ? Number(accountMap[month].cum_used) : null);
+      // Compute consumption for each month (difference from previous, null if missing or reset)
       const trend = [];
       for (let i = 1; i < readings.length; ++i) {
         const prev = readings[i - 1];
         const curr = readings[i];
-        let consumption = 0;
-        if (prev !== null && curr !== null) {
+        let consumption = null;
+        if (prev !== null && curr !== null && curr >= prev) {
           consumption = curr - prev;
-        } else if (prev !== null && curr === null) {
-          consumption = 0;
-        } else if (prev === null && curr !== null) {
-          consumption = 0;
-        } // both null: keep as 0
+        }
         trend.push({ month: sortedDatasets[i], consumption });
       }
-      // If not enough data, pad with zeros at the start
+      // If not enough data, pad with nulls at the start
       while (trend.length < months) {
-        trend.unshift({ month: sortedDatasets[trend.length], consumption: 0 });
+        trend.unshift({ month: sortedDatasets[trend.length], consumption: null });
       }
       // Return only the last N months
       return trend.slice(-months);
