@@ -204,9 +204,12 @@ export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) 
         skipped_zero_current++;
         continue;
       }
-      // If status is 'new', 'new status', or 'ni-renew', treat as not yet read
-      const isNewOrNotYetRead = status.includes('new') || status.includes('ni-renew');
-      if (isNewOrNotYetRead || status === '' || status === 'active' || status === 'ni') {
+      // If status is NULL, ACTIVE, New, or NI-Renew, treat as not yet read
+      const isNull = status === '' || status === null || status === undefined;
+      const isActive = status === 'active';
+      const isNew = status === 'new';
+      const isNIRenew = status === 'ni-renew';
+      if (isNull || isActive || isNew || isNIRenew) {
         // Not yet read: estimate using last 3 months' average consumption
         const last3 = monthlyConsumptions.slice(-3);
         currentConsumption = last3.length > 0 ? last3.reduce((a, b) => a + b, 0) / last3.length : 0;
