@@ -204,9 +204,17 @@ export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) 
         skipped_zero_current++;
         continue;
       }
-      // Not yet read: estimate using last 3 months' average consumption
-      const last3 = monthlyConsumptions.slice(-3);
-      currentConsumption = last3.length > 0 ? last3.reduce((a, b) => a + b, 0) / last3.length : 0;
+      // If status is 'new', 'new status', or 'ni-renew', treat as not yet read
+      const isNewOrNotYetRead = status.includes('new') || status.includes('ni-renew');
+      if (isNewOrNotYetRead || status === '' || status === 'active' || status === 'ni') {
+        // Not yet read: estimate using last 3 months' average consumption
+        const last3 = monthlyConsumptions.slice(-3);
+        currentConsumption = last3.length > 0 ? last3.reduce((a, b) => a + b, 0) / last3.length : 0;
+      } else {
+        // Unknown status, skip
+        skipped_zero_current++;
+        continue;
+      }
     } else {
       // Compute this month's consumption as difference from last month's cum_used
       const lastCumUsed = history.length > 0 ? history[history.length - 1] : 0;
