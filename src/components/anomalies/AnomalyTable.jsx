@@ -301,7 +301,11 @@ export default function AnomalyTable({ anomalies }) {
                     </div>
                     <div>
                       <span className="text-xs text-slate-500">Current: </span>
-                      <span className="font-medium text-slate-300">{selected.current_consumption} cu.m.</span>
+                      <span className="font-medium text-slate-300">
+                        {Array.isArray(history) && history.length > 0
+                          ? history[history.length - 1].consumption
+                          : selected.current_consumption} cu.m.
+                      </span>
                     </div>
                     <div>
                       <span className="text-xs text-slate-500">Deviation: </span>
