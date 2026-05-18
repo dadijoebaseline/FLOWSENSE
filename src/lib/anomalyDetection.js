@@ -93,14 +93,11 @@ export function parseGeoJSON(geojsonData, datasetLabel = '') {
     const rawId = props.accountnumber || props.AccountNumber || props.account_id || props.ogc_fid || props.meterno || props.MeterNo || '';
     const accountId = rawId ? String(rawId).trim().replace(/\s+/g, '').replace(/[^A-Za-z0-9_-]/g, '').toUpperCase() : null;
 
-    // Monthly consumption = present reading - previous reading
-    // (This is more reliable than cumused field which may be unreliable)
+    // Always use cumused as the cumulative usage for this month
+    const cum_used = Number(props.cumused ?? props.CumUsed ?? props.cum_used ?? props.Cum_Used) || 0;
+    // Optionally, keep readings for reference
     const prv_reading = Number(props.prvreading ?? props.PRVReading ?? props.prv_reading) || 0;
     const prs_reading = Number(props.prsreading ?? props.PRSReading ?? props.prs_reading) || 0;
-    const consumption_this_month = prs_reading - prv_reading;
-    
-    // Fallback to cumused if meter readings not available
-    const cum_used = consumption_this_month > 0 ? consumption_this_month : (Number(props.CumUsed ?? props.cum_used ?? props.Cum_Used) || 0);
 
     const warnings = [];
 
@@ -134,7 +131,7 @@ export function parseGeoJSON(geojsonData, datasetLabel = '') {
       status: props.status || props.Status || '',
       prv_reading: prv_reading,
       prs_reading: prs_reading,
-      cum_used,  // Now represents: prs_reading - prv_reading (monthly consumption)
+      cum_used,  // Now represents: cumulative usage for this month
       bill_amount: Number(props.BillAmount) || 0,
       year: props.Year || null,
       month: props.Month || '',
@@ -159,12 +156,11 @@ export function parseGeoJSON(geojsonData, datasetLabel = '') {
 export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) {
   const anomalies = [];
 
-  // Build a lookup: accountId -> array of monthly consumption values (chronological)
+  // Build a lookup: accountId -> array of cum_used values (chronological)
   const historyMap = {};
   for (const acc of historicalAccounts) {
     if (!acc.account_id) continue;
     if (!historyMap[acc.account_id]) historyMap[acc.account_id] = [];
-    // cum_used now represents monthly consumption (prs_reading - prv_reading)
     historyMap[acc.account_id].push(Number(acc.cum_used || 0));
   }
 
@@ -175,7 +171,7 @@ export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) 
 
   for (const account of currentAccounts) {
     if (!account.account_id) continue;
-    const currentConsumption = Number(account.cum_used || 0);
+    const currentCumUsed = Number(account.cum_used || 0);
     const history = historyMap[account.account_id] || [];
 
     if (history.length === 0) {
@@ -183,14 +179,24 @@ export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) 
       continue;
     }
 
-    // Compute average consumption from all historical months
-    const avgPrev = history.length > 0 ? history.reduce((a, b) => a + b, 0) / history.length : 0;
+    // Compute monthly consumptions from historical cum_used values
+    // e.g., [100, 150, 200] => [50, 50] (differences between months)
+    const monthlyConsumptions = [];
+    for (let i = 1; i < history.length; i++) {
+      const diff = history[i] - history[i - 1];
+      if (diff >= 0) monthlyConsumptions.push(diff);
+    }
+    const avgPrev = monthlyConsumptions.length > 0 ? monthlyConsumptions.reduce((a, b) => a + b, 0) / monthlyConsumptions.length : 0;
 
     // If we can't compute an average or all history is zero, skip
     if (avgPrev === 0) {
       skipped_zero_avg++;
       continue;
     }
+
+    // Compute this month's consumption as difference from last month's cum_used
+    const lastCumUsed = history.length > 0 ? history[history.length - 1] : 0;
+    const currentConsumption = currentCumUsed - lastCumUsed;
 
     if (currentConsumption === 0 && avgPrev > 0) {
       anomalies.push({
