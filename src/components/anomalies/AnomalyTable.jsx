@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { staticDataService } from '@/lib/staticDataService';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { ChartContainer } from '@/components/ui/chart';
-import { AreaChart, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ANOMALY_LABELS } from '@/lib/anomalyDetection';
 import {
