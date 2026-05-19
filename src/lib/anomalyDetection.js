@@ -94,7 +94,12 @@ export function parseGeoJSON(geojsonData, datasetLabel = '') {
     const accountId = rawId ? String(rawId).trim().replace(/\s+/g, '').replace(/[^A-Za-z0-9_-]/g, '').toUpperCase() : null;
 
     // Always use cumUsed as the monthly usage for this month
-    const cumUsed = Number(props.cumUsed ?? props.cumused ?? props.CumUsed ?? props.cum_used ?? props.Cum_Used) || 0;
+    let cumUsedRaw = props.cumUsed ?? props.cumused ?? props.CumUsed ?? props.cum_used ?? props.Cum_Used;
+    let status = (props.status ?? props.Status ?? '').toString().toUpperCase();
+    let cumUsed = Number(cumUsedRaw);
+    if (cumUsedRaw === null || cumUsedRaw === undefined || isNaN(cumUsed) || ["DISCONNECTED", "NEW", "RENEWED"].includes(status)) {
+      cumUsed = 0;
+    }
     // Optionally, keep readings for reference
     const prvReading = Number(props.prvReading ?? props.prvreading ?? props.PRVReading ?? props.prv_reading) || 0;
     const prsReading = Number(props.prsReading ?? props.prsreading ?? props.PRSReading ?? props.prs_reading) || 0;
