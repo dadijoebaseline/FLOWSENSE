@@ -171,13 +171,13 @@ function CanvasMarkersLayer({ anomalies }) {
     const pane = map.getPanes().overlayPane;
     const canvas = L.DomUtil.create('canvas', 'leaflet-canvas-markers');
     canvas.style.position = 'absolute';
-        canvas.style.left = '0px';
-        canvas.style.top = '0px';
-        canvas.style.pointerEvents = 'auto';
-        canvas.style.touchAction = 'none';
-        canvas.style.zIndex = 600;
-        const ctx = canvas.getContext('2d');
-        const ratio = window.devicePixelRatio || 1;
+    canvas.style.left = '0px';
+    canvas.style.top = '0px';
+    // Let pointer events pass through to the map so map click events remain reliable
+    canvas.style.pointerEvents = 'none';
+    canvas.style.zIndex = 600;
+    const ctx = canvas.getContext('2d');
+    const ratio = window.devicePixelRatio || 1;
 
     function resize() {
       const size = map.getSize();
@@ -190,20 +190,26 @@ function CanvasMarkersLayer({ anomalies }) {
     }
 
     function draw() {
+      // Align the canvas with the map layer's top-left so layer points map correctly
+      const topLeft = map.latLngToLayerPoint(map.getBounds().getNorthWest());
+      L.DomUtil.setPosition(canvas, topLeft);
+
       ctx.clearRect(0, 0, canvas.width / ratio, canvas.height / ratio);
       const bounds = map.getBounds();
       for (const anomaly of anomalies) {
         if (!anomaly.latitude || !anomaly.longitude) continue;
         const latlng = L.latLng(anomaly.latitude, anomaly.longitude);
         if (!bounds.contains(latlng)) continue;
-        const pt = map.latLngToContainerPoint(latlng);
+        const pt = map.latLngToLayerPoint(latlng);
+        const x = pt.x - topLeft.x;
+        const y = pt.y - topLeft.y;
         const radius = severityRadius[anomaly.severity] || 8;
         const color = ANOMALY_COLORS[anomaly.anomalyType] || '#6b7280';
         ctx.beginPath();
         ctx.fillStyle = color;
         ctx.strokeStyle = 'rgba(0,0,0,0.25)';
         ctx.lineWidth = 1;
-        ctx.arc(pt.x, pt.y, radius, 0, Math.PI * 2);
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
       }
@@ -214,20 +220,23 @@ function CanvasMarkersLayer({ anomalies }) {
 
     pane.appendChild(canvas);
     map.on('move', onViewChange);
-        map.on('zoom', onViewChange);
-        map.on('zoomend', onViewChange);
-        map.on('resize', onResize);
-        resize();
+    map.on('zoom', onViewChange);
+    map.on('zoomend', onViewChange);
+    map.on('resize', onResize);
+
+    // Initial sizing/draw
+    resize();
 
     function onClick(e) {
-      const clickPoint = e.containerPoint || map.latLngToContainerPoint(e.latlng);
+      // Use layer points so we remain consistent with canvas drawing coordinates
+      const clickLayer = map.latLngToLayerPoint(e.latlng);
       let minDist = Infinity, nearest = null;
       for (const anomaly of anomalies) {
         if (!anomaly.latitude || !anomaly.longitude) continue;
-        const pt = map.latLngToContainerPoint([anomaly.latitude, anomaly.longitude]);
-        const dx = pt.x - clickPoint.x;
-        const dy = pt.y - clickPoint.y;
-        const distSq = dx*dx + dy*dy;
+        const pt = map.latLngToLayerPoint([anomaly.latitude, anomaly.longitude]);
+        const dx = pt.x - clickLayer.x;
+        const dy = pt.y - clickLayer.y;
+        const distSq = dx * dx + dy * dy;
         if (distSq < minDist) { minDist = distSq; nearest = anomaly; }
       }
       if (nearest && Math.sqrt(minDist) <= 20) {
@@ -256,11 +265,11 @@ function CanvasMarkersLayer({ anomalies }) {
 
     return () => {
       map.off('move', onViewChange);
-            map.off('zoom', onViewChange);
-            map.off('zoomend', onViewChange);
-            map.off('resize', onResize);
-            map.off('click', onClick);
-            try { pane.removeChild(canvas); } catch (e) {}
+      map.off('zoom', onViewChange);
+      map.off('zoomend', onViewChange);
+      map.off('resize', onResize);
+      map.off('click', onClick);
+      try { pane.removeChild(canvas); } catch (e) {}
     };
   }, [anomalies, map]);
 
