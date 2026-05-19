@@ -82,7 +82,6 @@ export default function AnomalyTable({ anomalies }) {
   }, [selected]);
 
   function openDetails(anomaly) {
-    alert('openDetails fired! Name: ' + (anomaly.name || anomaly.accountNumber));
     setSelected(anomaly);
     setDialogOpen(true);
   }
