@@ -337,11 +337,6 @@ export default function AnomalyTable({ anomalies }) {
                   <div className="text-xs text-slate-500">Loading...</div>
                 ) : (
                   <>
-                    <div style={{background:'#222',color:'#fff',padding:'8px',marginBottom:'8px',fontSize:'12px',borderRadius:'4px'}}>
-                      <strong>DEBUG: Lookup Key:</strong> {selected?.accountId || selected?.accountNumber || 'N/A'}<br/>
-                      <strong>DEBUG: history data for chart:</strong>
-                      <pre style={{whiteSpace:'pre-wrap',wordBreak:'break-all'}}>{JSON.stringify(history,null,2)}</pre>
-                    </div>
                     {history && history.length > 0 ? (
                       <>
                         {!selected?.accountId && !selected?.accountNumber && (
@@ -349,10 +344,6 @@ export default function AnomalyTable({ anomalies }) {
                             <strong>WARNING:</strong> No accountId or accountNumber found for this anomaly. Trend chart cannot load.
                           </div>
                         )}
-                        <div style={{background:'#222',color:'#fff',padding:'8px',marginBottom:'8px',fontSize:'12px',borderRadius:'4px'}}>
-                          <strong>DEBUG: history data for chart:</strong>
-                          <pre style={{whiteSpace:'pre-wrap',wordBreak:'break-all'}}>{JSON.stringify(history,null,2)}</pre>
-                        </div>
                         <ChartContainer style={{ height: 180 }} config={{}}>
                           <AreaChart data={history} margin={{ left: 10, right: 10, top: 10, bottom: 10 }}>
                             <defs>
