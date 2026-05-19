@@ -92,7 +92,7 @@ export default function Dashboard() {
           <AnomalyMap anomalies={anomalies} height="h-56 sm:h-72 md:h-80 lg:h-96" />
         </motion.div>
         <div className="lg:col-span-2">
-          <RecentAnomalies anomalies={anomalies} />
+          <RecentAnomalies anomalies={anomalies.map(a => ({ ...a, _onClick: () => window.dispatchEvent(new CustomEvent('anomaly:open', { detail: a })) }))} />
         </div>
       </div>
     </div>

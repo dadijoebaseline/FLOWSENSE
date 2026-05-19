@@ -75,7 +75,11 @@ export default function RecentAnomalies({ anomalies }) {
               initial={{ opacity: 0, x: 12 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.25 + i * 0.04 }}
-              className="flex items-center gap-3 p-3 rounded-xl transition-colors cursor-default group"
+              role="button"
+              tabIndex={0}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); anomaly._onClick?.(); } }}
+              onClick={() => anomaly._onClick?.()}
+              className="flex items-center gap-3 p-3 rounded-xl transition-colors cursor-pointer group"
               style={{ border: '1px solid transparent' }}
               onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}

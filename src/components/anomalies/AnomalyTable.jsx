@@ -88,6 +88,18 @@ export default function AnomalyTable({ anomalies, initialType = 'all', initialSe
     return () => { mounted = false };
   }, [selected]);
 
+  // Listen for global anomaly open events (dispatched from RecentAnomalies)
+  useEffect(() => {
+    function onOpen(e) {
+      if (e && e.detail) {
+        setSelected(e.detail);
+        setDialogOpen(true);
+      }
+    }
+    window.addEventListener('anomaly:open', onOpen);
+    return () => window.removeEventListener('anomaly:open', onOpen);
+  }, []);
+
   function openDetails(anomaly) {
     setSelected(anomaly);
     setDialogOpen(true);
@@ -302,9 +314,10 @@ export default function AnomalyTable({ anomalies, initialType = 'all', initialSe
                 <DialogTitle>Account Details</DialogTitle>
                 <DialogDescription>
                   <div className="mt-2 mb-3">
-                    <div className="font-semibold text-base text-slate-200">{selected.name || selected.accountId}</div>
-                    <div className="text-xs text-slate-500 font-mono">Account: {selected.accountId}</div>
-                    {selected.meterNo && <div className="text-xs text-slate-500 font-mono">Meter: {selected.meterNo}</div>}
+                    <div className="font-semibold text-base text-slate-200">{selected.name || selected.accountNumber || selected.accountId}</div>
+                    <div className="text-xs text-slate-500 font-mono">Account: {selected.accountNumber || selected.accountId}</div>
+                    <div className="text-xs text-slate-500 font-mono">Meter: {selected.meterNo || '\u2014'}</div>
+                    <div className="text-xs text-slate-500 font-mono">Status: {selected.status || '\u2014'}</div>
                     {selected.address && <div className="text-xs text-slate-400 mt-1">{selected.address}</div>}
                   </div>
                   <div className="flex gap-4 mb-2">

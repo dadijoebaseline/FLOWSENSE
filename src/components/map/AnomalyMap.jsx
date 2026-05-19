@@ -141,6 +141,11 @@ function MarkersClusterLayer({ anomalies }) {
       popupContent.style.fontFamily = 'Inter, sans-serif';
       popupContent.innerHTML = `
         <p style="font-weight:700;font-size:13px;color:#f1f5f9;margin-bottom:8px;">${anomaly.accountName || anomaly.accountNumber}</p>
+        <div style="font-size:11px;color:#94a3b8;margin-bottom:6px;">
+          <span style="margin-right:8px;">Acct: ${anomaly.accountNumber || anomaly.accountId || ''}</span>
+          <span style="margin-right:8px;">Meter: ${anomaly.meterNo || '\u2014'}</span>
+          <span>Status: ${anomaly.status || '\u2014'}</span>
+        </div>
         ${anomaly.address ? `<p style="font-size:11px;color:#64748b;margin-bottom:10px;">${anomaly.address}</p>` : ''}
         <div style="display:flex;flex-direction:column;gap:5px;">
           <div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:11px;color:#64748b;">Type</span><span style="font-size:11px;color:${color};font-weight:600;">${ANOMALY_LABELS[anomaly.anomalyType]}</span></div>
@@ -243,6 +248,11 @@ function CanvasMarkersLayer({ anomalies }) {
         const html = `
           <div style="padding:14px 16px;font-family:Inter, sans-serif;">
            <p style="font-weight:700;font-size:13px;color:#f1f5f9;margin-bottom:8px;">${nearest.accountName || nearest.accountNumber}</p>
+           <div style="font-size:11px;color:#94a3b8;margin-bottom:6px;">
+             <span style="margin-right:8px;">Acct: ${nearest.accountNumber || nearest.accountId || ''}</span>
+             <span style="margin-right:8px;">Meter: ${nearest.meterNo || '\u2014'}</span>
+             <span>Status: ${nearest.status || '\u2014'}</span>
+           </div>
            ${nearest.address ? `<p style="font-size:11px;color:#64748b;margin-bottom:10px;">${nearest.address}</p>` : ''}
            <div style="display:flex;flex-direction:column;gap:5px;">
              <div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:11px;color:#64748b;">Type</span><span style="font-size:11px;color:${ANOMALY_COLORS[nearest.anomalyType]||'#6b7280'};font-weight:600;">${ANOMALY_LABELS[nearest.anomalyType]}</span></div>
