@@ -179,22 +179,40 @@ export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) 
 
   for (const account of currentAccounts) {
     if (!account.accountId) continue;
-    const currentCumUsed = account.cumUsed;
-  const rawCumUsed = account.rawCumUsed ?? null;
-  const hasRawCumUsed = rawCumUsed !== null && rawCumUsed !== undefined && !isNaN(Number(rawCumUsed));
-  const isCumUsedNull = !hasRawCumUsed;
-  const status = (account.status || '').toLowerCase();
-  const history = historyMap[account.accountId] || [];
+    const history = historyMap[account.accountId] || [];
+
+    // Prefer rawCumUsed when present; fallback to cumUsed for reading detection
+    const rawReading = (account.rawCumUsed !== undefined && account.rawCumUsed !== null) ? Number(account.rawCumUsed)
+                      : (account.cumUsed !== undefined && account.cumUsed !== null) ? Number(account.cumUsed)
+                      : null;
+    const hasReading = rawReading !== null && !isNaN(rawReading);
+    const status = (account.status || '').toLowerCase();
 
     if (history.length === 0) {
       skipped_no_history++;
       continue;
     }
 
-    // cumUsed values ARE already monthly consumption — average them directly
-    const positiveHistory = history.filter(v => v > 0);
-    const avgPrev = positiveHistory.length > 0
-      ? positiveHistory.reduce((a, b) => a + b, 0) / positiveHistory.length
+    // Build numeric history array
+    const numericHistory = history.map(h => Number(h)).filter(v => !isNaN(v) && isFinite(v));
+    // Default: treat historical values as monthly consumption
+    let monthlyHistory = numericHistory.filter(v => v > 0);
+
+    // If historical values look like cumulative readings, convert to monthly diffs
+    if (numericHistory.length >= 2) {
+      const diffs = [];
+      for (let i = 1; i < numericHistory.length; i++) {
+        const d = numericHistory[i] - numericHistory[i - 1];
+        if (!isNaN(d) && isFinite(d)) diffs.push(d);
+      }
+      const positiveDiffs = diffs.filter(d => d > 0);
+      if (positiveDiffs.length > 0) {
+        monthlyHistory = positiveDiffs;
+      }
+    }
+
+    const avgPrev = monthlyHistory.length > 0
+      ? monthlyHistory.reduce((a, b) => a + b, 0) / monthlyHistory.length
       : 0;
 
     if (avgPrev === 0) {
@@ -203,7 +221,7 @@ export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) 
     }
 
     let currentConsumption;
-    if (isCumUsedNull) {
+    if (!hasReading) {
       if (status === 'disconnected') {
         skipped_zero_current++;
         continue;
@@ -217,12 +235,22 @@ export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) 
         continue;
       }
     } else {
-      // Use this month's cumUsed directly as the monthly consumption
-      currentConsumption = Number(currentCumUsed);
+      // If historical was derived from cumulative readings (we used diffs) and the current reading looks cumulative,
+      // compute current month's consumption as delta from last historical reading.
+      if (numericHistory.length >= 1) {
+        const lastHist = numericHistory[numericHistory.length - 1];
+        if (rawReading > lastHist) {
+          currentConsumption = rawReading - lastHist;
+        } else {
+          currentConsumption = rawReading;
+        }
+      } else {
+        currentConsumption = rawReading;
+      }
     }
 
-    // Only treat as zero_consumption anomaly when the raw provided reading was explicitly zero and account status is ACTIVE
-    if (hasRawCumUsed && Number(rawCumUsed) === 0 && avgPrev > 0 && status === 'active') {
+    // Only treat as zero_consumption anomaly when the provided reading was explicitly zero and account status is ACTIVE
+    if (hasReading && Number(rawReading) === 0 && avgPrev > 0 && status === 'active') {
       anomalies.push({
         accountNumber: account.accountId,
         name: account.accountName || '',
