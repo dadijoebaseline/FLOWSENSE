@@ -235,18 +235,7 @@ export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) 
         continue;
       }
     } else {
-      // If historical was derived from cumulative readings (we used diffs) and the current reading looks cumulative,
-      // compute current month's consumption as delta from last historical reading.
-      if (numericHistory.length >= 1) {
-        const lastHist = numericHistory[numericHistory.length - 1];
-        if (rawReading > lastHist) {
-          currentConsumption = rawReading - lastHist;
-        } else {
-          currentConsumption = rawReading;
-        }
-      } else {
-        currentConsumption = rawReading;
-      }
+      currentConsumption = rawReading;
     }
 
     // Only treat as zero_consumption anomaly when the provided reading was explicitly zero and account status is ACTIVE
