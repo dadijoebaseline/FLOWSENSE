@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
+import { ANOMALY_LABELS } from '@/lib/anomalyDetection';
 import { staticDataService } from '@/lib/staticDataService';
 import StatsCard from '@/components/dashboard/StatsCard';
 import { AnomalyPieChart, AnomalySeverityChart } from '@/components/dashboard/AnomalyChart';
@@ -12,6 +14,20 @@ import { motion } from 'framer-motion';
 export default function Dashboard() {
   const { role } = useOutletContext();
   const navigate = useNavigate();
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedAnomaly, setSelectedAnomaly] = useState(null);
+
+  useEffect(() => {
+    function onOpen(e) {
+      if (e && e.detail) {
+        setSelectedAnomaly(e.detail);
+        setDialogOpen(true);
+      }
+    }
+    window.addEventListener('anomaly:open', onOpen);
+    return () => window.removeEventListener('anomaly:open', onOpen);
+  }, []);
 
   const { data: anomalies = [], isLoading } = useQuery({
     queryKey: ['anomalies'],
@@ -95,6 +111,52 @@ export default function Dashboard() {
           <RecentAnomalies anomalies={anomalies.map(a => ({ ...a, _onClick: () => window.dispatchEvent(new CustomEvent('anomaly:open', { detail: a })) }))} />
         </div>
       </div>
+
+      {/* Global anomaly details dialog (opened from RecentAnomalies or other places) */}
+      <Dialog open={dialogOpen} onOpenChange={open => { setDialogOpen(open); if (!open) setSelectedAnomaly(null); }}>
+        <DialogContent className="max-w-md w-full">
+          {selectedAnomaly && (
+            <>
+              <DialogHeader>
+                <DialogTitle>Account Details</DialogTitle>
+                <DialogDescription>
+                  <div className="mt-2 mb-3">
+                    <div className="font-semibold text-base text-slate-200">{selectedAnomaly.name || selectedAnomaly.accountNumber || selectedAnomaly.accountId}</div>
+                    <div className="text-xs text-slate-500 font-mono">Account: {selectedAnomaly.accountNumber || selectedAnomaly.accountId}</div>
+                    <div className="text-xs text-slate-500 font-mono">Meter: {selectedAnomaly.meterNo || '\u2014'}</div>
+                    <div className="text-xs text-slate-500 font-mono">Status: {selectedAnomaly.status || '\u2014'}</div>
+                    {selectedAnomaly.address && <div className="text-xs text-slate-400 mt-1">{selectedAnomaly.address}</div>}
+                  </div>
+                  <div className="flex gap-4 mb-2">
+                    <div>
+                      <span className="text-xs text-slate-500">Type: </span>
+                      <span className="font-medium text-slate-300">{ANOMALY_LABELS[selectedAnomaly.anomalyType]}</span>
+                    </div>
+                    <div>
+                      <span className="text-xs text-slate-500">Severity: </span>
+                      <span className="font-medium capitalize">{selectedAnomaly.severity}</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-4 mb-2">
+                    <div>
+                      <span className="text-xs text-slate-500">Avg: </span>
+                      <span className="font-medium text-slate-300">{selectedAnomaly.averageConsumption} cu.m.</span>
+                    </div>
+                    <div>
+                      <span className="text-xs text-slate-500">Current: </span>
+                      <span className="font-medium text-slate-300">{selectedAnomaly.reportedReading !== undefined && selectedAnomaly.reportedReading !== null ? selectedAnomaly.reportedReading : selectedAnomaly.currentConsumption} cu.m.</span>
+                    </div>
+                    <div>
+                      <span className="text-xs text-slate-500">Deviation: </span>
+                      <span className={`font-medium ${selectedAnomaly.deviationPercent > 0 ? 'text-red-400' : 'text-sky-400'}`}>{selectedAnomaly.deviationPercent > 0 ? '+' : ''}{selectedAnomaly.deviationPercent}%</span>
+                    </div>
+                  </div>
+                </DialogDescription>
+              </DialogHeader>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
