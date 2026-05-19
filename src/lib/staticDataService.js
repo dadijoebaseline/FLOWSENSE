@@ -185,13 +185,51 @@ export const staticDataService = {
       historicalAccounts.push(...currentAccounts);
     }
 
-    // Explicit runtime log for confirmation
-    console.log('[getAnomalies] Total calculated anomalies:', anomalies.length);
-    if (anomalies.length > 0) {
-      console.log('[getAnomalies] Sample anomalies:', anomalies.slice(0, 3));
+    // Remove zero_consumption anomalies that are superseded by later non-zero readings for the same account
+    const monthIndex = {};
+    months.forEach((m, i) => { monthIndex[m] = i; });
+
+    const latestByAccount = {};
+    for (const acc of allAccounts) {
+      if (!acc.accountId) continue;
+      const idx = monthIndex[acc.datasetId] ?? -1;
+      if (idx === -1) continue;
+      if (!latestByAccount[acc.accountId] || idx > latestByAccount[acc.accountId].index) {
+        latestByAccount[acc.accountId] = { acc, index: idx };
+      }
     }
 
-    return anomalies;
+    const filtered = anomalies.filter(a => {
+      if (a.anomalyType !== 'zero_consumption') return true;
+      const latest = latestByAccount[a.accountNumber];
+      if (!latest) return true;
+      const anomalyIdx = monthIndex[a.datasetId] ?? -1;
+      // If there is a later dataset for this account, and that later dataset shows positive consumption, drop the earlier zero flag
+      if (latest.index > anomalyIdx) {
+        const la = latest.acc;
+        let latestConsumption = null;
+        const hasPrv = la.prvReading !== undefined && la.prvReading !== null && !isNaN(Number(la.prvReading));
+        const hasPrs = la.prsReading !== undefined && la.prsReading !== null && !isNaN(Number(la.prsReading));
+        if (hasPrv && hasPrs) {
+          latestConsumption = Number(la.prsReading) - Number(la.prvReading);
+        } else if (la.rawCumUsed !== undefined && la.rawCumUsed !== null) {
+          latestConsumption = Number(la.rawCumUsed);
+        } else {
+          latestConsumption = Number(la.cumUsed);
+        }
+        if (isNaN(latestConsumption)) latestConsumption = 0;
+        if (latestConsumption > 0) {
+          console.log(`[getAnomalies] Removing zero_consumption for ${a.accountNumber} (${a.datasetId}) because later dataset ${la.datasetId} has consumption=${latestConsumption}`);
+          return false;
+        }
+      }
+      return true;
+    });
+
+    console.log('[getAnomalies] Total calculated anomalies before=', anomalies.length, 'after=', filtered.length);
+    if (filtered.length > 0) console.log('[getAnomalies] Sample anomalies:', filtered.slice(0, 3));
+
+    return filtered;
   },
 
   /**
