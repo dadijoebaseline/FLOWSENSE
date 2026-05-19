@@ -1,7 +1,13 @@
 import React, { useMemo } from 'react';
 import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
-import { ANOMALY_COLORS, ANOMALY_LABELS } from '@/lib/anomalyDetection';
 import 'leaflet/dist/leaflet.css';
+// Marker clustering
+import 'leaflet.markercluster/dist/MarkerCluster.css';
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
+import 'leaflet.markercluster';
+import L from 'leaflet';
+import { ANOMALY_COLORS, ANOMALY_LABELS } from '@/lib/anomalyDetection';
+
 
 const severityRadius = { low: 6, medium: 9, high: 12, critical: 16 };
 
@@ -48,61 +54,106 @@ export default function AnomalyMap({ anomalies, height = '500px' }) {
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>'
             url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
           />
-          {validAnomalies.map((anomaly, i) => {
-            const color = ANOMALY_COLORS[anomaly.anomalyType] || '#6b7280';
-            const radius = severityRadius[anomaly.severity] || 8;
-            return (
-              <CircleMarker
-                key={anomaly.accountNumber || i}
-                center={[anomaly.latitude, anomaly.longitude]}
-                radius={radius}
-                pathOptions={{
-                  color: color,
-                  fillColor: color,
-                  fillOpacity: 0.75,
-                  weight: 1.5,
-                  opacity: 0.9,
-                }}
-              >
-                <Popup maxWidth={220}>
-                  <div style={{ padding: '14px 16px', fontFamily: 'Inter, sans-serif' }}>
-                    <p style={{ fontWeight: 700, fontSize: 13, color: '#f1f5f9', marginBottom: 8, fontFamily: 'Space Grotesk, sans-serif' }}>
-                      {anomaly.accountName || anomaly.accountNumber}
-                    </p>
-                    {anomaly.address && (
-                      <p style={{ fontSize: 11, color: '#64748b', marginBottom: 10 }}>{anomaly.address}</p>
-                    )}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: 11, color: '#64748b' }}>Type</span>
-                        <span style={{ fontSize: 11, color: color, fontWeight: 600 }}>{ANOMALY_LABELS[anomaly.anomalyType]}</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: 11, color: '#64748b' }}>Avg</span>
-                        <span style={{ fontSize: 11, color: '#94a3b8' }}>{anomaly.averageConsumption} cu.m.</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: 11, color: '#64748b' }}>Current</span>
-                        <span style={{ fontSize: 11, color: '#94a3b8' }}>{anomaly.currentConsumption} cu.m.</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: 11, color: '#64748b' }}>Deviation</span>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: anomaly.deviationPercent > 0 ? '#f87171' : '#38bdf8' }}>
-                          {anomaly.deviationPercent > 0 ? '+' : ''}{anomaly.deviationPercent}%
-                        </span>
-                      </div>
-                    </div>
-                    <div style={{ marginTop: 10, padding: '5px 10px', background: 'rgba(255,255,255,0.06)', borderRadius: 8, textAlign: 'center' }}>
-                      <span style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Severity: </span>
-                      <span style={{ fontSize: 10, fontWeight: 700, color: color, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{anomaly.severity}</span>
-                    </div>
-                  </div>
-                </Popup>
-              </CircleMarker>
-            );
-          })}
+
+          {/* MarkerClusterGroup using leaflet.markercluster */}
+          <MarkersClusterLayer anomalies={validAnomalies} />
         </MapContainer>
       </div>
     </>
   );
+}
+
+/**
+ * Marker cluster layer component that integrates with react-leaflet via the Leaflet API.
+ * Renders CircleMarker instances into clusters for better performance with many markers.
+ */
+function MarkersClusterLayer({ anomalies }) {
+  // Create custom icons for cluster markers using a simple colored circle SVG
+  const createClusterIcon = (count, color) => {
+    const size = Math.min(60, 30 + Math.floor(Math.log10(count + 1) * 8));
+    const svg = `data:image/svg+xml;utf8,` + encodeURIComponent(`
+      <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="${color}" fill-opacity="0.95" stroke="#000" stroke-opacity="0.25" stroke-width="2" />
+        <text x="50%" y="50%" dy=".3em" font-family="Arial, Helvetica, sans-serif" font-size="${Math.max(10, Math.floor(size/3))}" fill="#fff" text-anchor="middle">${count}</text>
+      </svg>
+    `);
+    return L.divIcon({ html: `<img src="${svg}" style="display:block; width: ${size}px; height: ${size}px;"/>`, className: 'custom-cluster-icon', iconSize: [size, size] });
+  };
+
+  // This component uses imperative Leaflet APIs to add clustering because react-leaflet support for markercluster is minimal
+  React.useEffect(() => {
+    if (!anomalies || anomalies.length === 0) return;
+    // Access global L (leaflet) which has markerCluster plugin attached
+    if (!L || !L.markerClusterGroup) return;
+
+    const map = document.querySelector('.leaflet-container')?.__reactLeaflet_map;
+    // Fallback: find the first active map instance from window
+    // But react-leaflet exposes map via context; this is a pragmatic approach in a static demo
+    const leafletMap = window._leaflet_map_instance || (map || null);
+    // If map not yet available, wait briefly
+    if (!leafletMap) return;
+
+    const clusterGroup = L.markerClusterGroup({
+      chunkedLoading: true,
+      spiderfyOnMaxZoom: true,
+      showCoverageOnHover: false,
+      maxClusterRadius: 60,
+    });
+
+    anomalies.forEach(anomaly => {
+      if (!anomaly.latitude || !anomaly.longitude) return;
+      const color = ANOMALY_COLORS[anomaly.anomalyType] || '#6b7280';
+      const radius = { low: 6, medium: 9, high: 12, critical: 16 }[anomaly.severity] || 8;
+      const marker = L.circleMarker([anomaly.latitude, anomaly.longitude], {
+        radius,
+        color,
+        fillColor: color,
+        fillOpacity: 0.85,
+        weight: 1,
+      });
+      const popupContent = document.createElement('div');
+      popupContent.style.padding = '14px 16px';
+      popupContent.style.fontFamily = 'Inter, sans-serif';
+      popupContent.innerHTML = `
+        <p style="font-weight:700;font-size:13px;color:#f1f5f9;margin-bottom:8px;">${anomaly.accountName || anomaly.accountNumber}</p>
+        ${anomaly.address ? `<p style="font-size:11px;color:#64748b;margin-bottom:10px;">${anomaly.address}</p>` : ''}
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:11px;color:#64748b;">Type</span><span style="font-size:11px;color:${color};font-weight:600;">${ANOMALY_LABELS[anomaly.anomalyType]}</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:11px;color:#64748b;">Avg</span><span style="font-size:11px;color:#94a3b8;">${anomaly.averageConsumption} cu.m.</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:11px;color:#64748b;">Current</span><span style="font-size:11px;color:#94a3b8;">${anomaly.currentConsumption} cu.m.</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:11px;color:#64748b;">Deviation</span><span style="font-size:11px;font-weight:700;color:${anomaly.deviationPercent > 0 ? '#f87171' : '#38bdf8'};">${anomaly.deviationPercent > 0 ? '+' : ''}${anomaly.deviationPercent}%</span></div>
+        </div>
+        <div style="margin-top:10px;padding:5px 10px;background:rgba(255,255,255,0.06);border-radius:8px;text-align:center;"><span style="font-size:10px;color:#94a3b8;text-transform:uppercase;">Severity: </span><span style="font-size:10px;font-weight:700;color:${color};text-transform:uppercase;">${anomaly.severity}</span></div>
+      `;
+      marker.bindPopup(popupContent);
+      clusterGroup.addLayer(marker);
+    });
+
+    leafletMap.addLayer(clusterGroup);
+
+    // Create a custom cluster icon callback to style clusters by dominant anomaly type
+    clusterGroup.options.iconCreateFunction = function (cluster) {
+      const childMarkers = cluster.getAllChildMarkers();
+      // Count types and pick the most common
+      const counts = {};
+      childMarkers.forEach(m => {
+        const c = m.options.fillColor || '#6b7280';
+        counts[c] = (counts[c] || 0) + 1;
+      });
+      // pick color with highest count
+      let maxColor = '#6b7280';
+      let maxCount = 0;
+      for (const c in counts) {
+        if (counts[c] > maxCount) { maxCount = counts[c]; maxColor = c; }
+      }
+      return createClusterIcon(cluster.getChildCount(), maxColor);
+    };
+
+    // Cleanup on effect rerun
+    return () => {
+      try { leafletMap.removeLayer(clusterGroup); } catch (e) {}
+    };
+  }, [anomalies]);
+
+  return null;
 }
