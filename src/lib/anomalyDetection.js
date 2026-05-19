@@ -264,6 +264,7 @@ export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) 
         deviationPercent: -100,
         latitude: account.latitude,
         longitude: account.longitude,
+        status: account.status || '',
         datasetId: account.datasetId,
       });
       flagged_anomalies++;
@@ -292,6 +293,7 @@ export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) 
         deviationPercent: Math.round(deviationPercent * 100) / 100,
         latitude: account.latitude,
         longitude: account.longitude,
+        status: account.status || '',
         datasetId: account.datasetId,
       });
       flagged_anomalies++;
@@ -311,6 +313,7 @@ export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) 
         deviationPercent: Math.round(deviationPercent * 100) / 100,
         latitude: account.latitude,
         longitude: account.longitude,
+        status: account.status || '',
         datasetId: account.datasetId,
       });
       flagged_anomalies++;
