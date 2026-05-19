@@ -37,7 +37,8 @@ const CustomPieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent })
 export function AnomalyPieChart({ anomalies }) {
   const data = Object.entries(
     anomalies.reduce((acc, a) => {
-      acc[a.anomaly_type] = (acc[a.anomaly_type] || 0) + 1;
+      const key = a.anomalyType || a.anomaly_type || 'unknown';
+      acc[key] = (acc[key] || 0) + 1;
       return acc;
     }, {})
   ).map(([type, count]) => ({
