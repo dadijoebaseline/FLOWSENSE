@@ -108,13 +108,44 @@ export const staticDataService = {
       const lastMonthIdx = sortedDatasets.reduce((idx, month, i) => accountMap[month] ? i : idx, -1);
       // Get previous 3 months (including current if present)
       const trendMonths = lastMonthIdx >= 2 ? sortedDatasets.slice(lastMonthIdx - 2, lastMonthIdx + 1) : sortedDatasets.slice(0, 3);
-      const trend = trendMonths.map(month => {
+      // Build an aligned array of raw values for the trend window
+      const rawValues = trendMonths.map(month => {
         const acc = accountMap[month];
-        const cumUsed = acc ? Number(acc.cumUsed) : NaN;
-        return {
-          month,
-          consumption: acc && !isNaN(cumUsed) ? cumUsed : null,
-        };
+        return acc && acc.cumUsed !== undefined && acc.cumUsed !== null ? Number(acc.cumUsed) : null;
+      });
+
+      // Detect whether historical values look like cumulative meter readings (non-decreasing sequence)
+      const numericValues = rawValues.map(v => (v === null ? null : Number(v)));
+      let isCumulative = false;
+      const validForDetection = numericValues.filter(v => v !== null && !isNaN(v) && isFinite(v));
+      if (validForDetection.length >= 2) {
+        isCumulative = true;
+        for (let i = 1; i < numericValues.length; i++) {
+          const prev = numericValues[i - 1];
+          const cur = numericValues[i];
+          if (prev !== null && cur !== null) {
+            if (cur < prev) { isCumulative = false; break; }
+          }
+        }
+      }
+
+      const trend = trendMonths.map((month, i) => {
+        const val = numericValues[i];
+        if (val === null || isNaN(val)) return { month, consumption: null };
+        if (isCumulative) {
+          // compute monthly consumption as delta from the most recent previous available value
+          let prevIndex = i - 1;
+          while (prevIndex >= 0 && (numericValues[prevIndex] === null || isNaN(numericValues[prevIndex]))) prevIndex--;
+          if (prevIndex >= 0) {
+            const prev = numericValues[prevIndex];
+            const diff = val - prev;
+            return { month, consumption: diff >= 0 ? Math.round(diff * 100) / 100 : Math.round(val * 100) / 100 };
+          }
+          // no previous value to compute delta from
+          return { month, consumption: null };
+        }
+        // values appear to already be monthly consumption
+        return { month, consumption: Math.round(val * 100) / 100 };
       });
       // Pad with nulls at the start if fewer than 3 months
       while (trend.length < 3) {
