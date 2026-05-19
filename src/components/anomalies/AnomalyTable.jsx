@@ -325,9 +325,11 @@ export default function AnomalyTable({ anomalies, initialType = 'all', initialSe
                     <div>
                       <span className="text-xs text-slate-500">Current: </span>
                       <span className="font-medium text-slate-300">
-                        {Array.isArray(history) && history.length > 0
-                                                  ? (history.find(h => h.month === selected.datasetId)?.consumption ?? history[history.length - 1].consumption)
-                          : selected.currentConsumption} cu.m.
+                        {selected.reportedReading !== undefined && selected.reportedReading !== null
+                                                  ? selected.reportedReading
+                                                  : (Array.isArray(history) && history.length > 0
+                                                      ? (history.find(h => h.month === selected.datasetId)?.consumption ?? history[history.length - 1].consumption)
+                                                      : selected.currentConsumption)} cu.m.
                       </span>
                     </div>
                     <div>
