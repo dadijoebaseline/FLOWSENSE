@@ -39,15 +39,27 @@ const colorConfig = {
   },
 };
 
-export default function StatsCard({ title, value, subtitle, icon: Icon, color = 'primary', delay = 0 }) {
+export default function StatsCard({ title, value, subtitle, icon: Icon, color = 'primary', delay = 0, onClick }) {
   const cfg = colorConfig[color] || colorConfig.primary;
+
+  function handleKeyDown(e) {
+    if (!onClick) return;
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onClick();
+    }
+  }
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay, ease: [0.23, 1, 0.32, 1] }}
-      className="relative overflow-hidden rounded-2xl p-5 group cursor-default"
+      onClick={onClick}
+      onKeyDown={handleKeyDown}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      className={`relative overflow-hidden rounded-2xl p-5 group ${onClick ? 'cursor-pointer' : 'cursor-default'}`}
       style={{
         background: 'rgba(255,255,255,0.03)',
         border: '1px solid rgba(255,255,255,0.07)',

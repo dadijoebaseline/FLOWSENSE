@@ -36,12 +36,19 @@ const inputStyle = {
   color: '#e2e8f0',
 };
 
-export default function AnomalyTable({ anomalies }) {
+export default function AnomalyTable({ anomalies, initialType = 'all', initialSeverity = 'all' }) {
   const PAGE_SIZE = 10;
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
-  const [typeFilter, setTypeFilter] = useState('all');
-  const [severityFilter, setSeverityFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState(initialType || 'all');
+  const [severityFilter, setSeverityFilter] = useState(initialSeverity || 'all');
+
+  useEffect(() => {
+    // when parent supplies a different initial filter (via URL), apply it
+    setTypeFilter(initialType || 'all');
+    setSeverityFilter(initialSeverity || 'all');
+    setPage(1);
+  }, [initialType, initialSeverity]);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selected, setSelected] = useState(null);

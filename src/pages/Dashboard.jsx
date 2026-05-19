@@ -1,5 +1,5 @@
 import React from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { staticDataService } from '@/lib/staticDataService';
 import StatsCard from '@/components/dashboard/StatsCard';
@@ -11,6 +11,7 @@ import { motion } from 'framer-motion';
 
 export default function Dashboard() {
   const { role } = useOutletContext();
+  const navigate = useNavigate();
 
   const { data: anomalies = [], isLoading } = useQuery({
     queryKey: ['anomalies'],
@@ -64,10 +65,10 @@ export default function Dashboard() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatsCard title="Total Anomalies" value={anomalies.length} icon={AlertTriangle} color="red" delay={0} subtitle={`${critical} critical`} />
-        <StatsCard title="Sudden High" value={suddenHigh} icon={ArrowUpRight} color="red" delay={0.07} subtitle="≥30% increase" />
-        <StatsCard title="Zero Usage" value={zeroCons} icon={Droplets} color="amber" delay={0.14} subtitle="No consumption" />
-        <StatsCard title="Sudden Down" value={suddenDown} icon={ArrowDownRight} color="blue" delay={0.21} subtitle="≥30% decrease" />
+        <StatsCard title="Total Anomalies" value={anomalies.length} icon={AlertTriangle} color="red" delay={0} subtitle={`${critical} critical`} onClick={() => navigate('/anomalies')} />
+        <StatsCard title="Sudden High" value={suddenHigh} icon={ArrowUpRight} color="red" delay={0.07} subtitle="≥30% increase" onClick={() => navigate('/anomalies?type=sudden_high')} />
+        <StatsCard title="Zero Usage" value={zeroCons} icon={Droplets} color="amber" delay={0.14} subtitle="No consumption" onClick={() => navigate('/anomalies?type=zero_consumption')} />
+        <StatsCard title="Sudden Down" value={suddenDown} icon={ArrowDownRight} color="blue" delay={0.21} subtitle="≥30% decrease" onClick={() => navigate('/anomalies?type=sudden_down')} />
       </div>
 
       {/* Charts Row */}

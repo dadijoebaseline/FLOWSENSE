@@ -4,8 +4,12 @@ import { staticDataService } from '@/lib/staticDataService';
 import AnomalyTable from '@/components/anomalies/AnomalyTable';
 import { motion } from 'framer-motion';
 import { AlertTriangle } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 
 export default function Anomalies() {
+  const [searchParams] = useSearchParams();
+  const initialType = searchParams.get('type') || 'all';
+
   const { data: anomalies = [], isLoading } = useQuery({
     queryKey: ['anomalies'],
     queryFn: () => staticDataService.getAnomalies(),
@@ -41,7 +45,7 @@ export default function Anomalies() {
           <p className="text-sm text-slate-500 mt-0.5">All flagged water consumption anomalies</p>
         </div>
       </motion.div>
-      <AnomalyTable anomalies={anomalies} />
+      <AnomalyTable anomalies={anomalies} initialType={initialType} />
     </div>
   );
 }
