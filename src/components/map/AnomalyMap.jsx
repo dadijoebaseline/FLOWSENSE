@@ -140,21 +140,38 @@ function MarkersClusterLayer({ anomalies }) {
       popupContent.style.padding = '14px 16px';
       popupContent.style.fontFamily = 'Inter, sans-serif';
       popupContent.innerHTML = `
-        <p style="font-weight:700;font-size:13px;color:#f1f5f9;margin-bottom:8px;">${anomaly.accountNumber || anomaly.accountId || anomaly.accountName || '\u2014'}</p>
-        <div style="font-size:11px;color:#94a3b8;margin-bottom:6px;line-height:1.3;">
-          <div style="margin-bottom:4px;">Acct: ${anomaly.accountNumber || anomaly.accountId || '\u2014'}</div>
-          <div style="margin-bottom:4px;">Name: ${anomaly.accountName || anomaly.name || '\u2014'}</div>
-          <div style="margin-bottom:4px;">Meter: ${anomaly.meterNo || '\u2014'}</div>
-          <div>Status: ${anomaly.status || '\u2014'}</div>
+        <div style="padding:0 14px 12px 16px;">
+          <p style="font-weight:700;font-size:13px;color:#f1f5f9;margin-bottom:6px;">${anomaly.name || anomaly.accountNumber || anomaly.accountId || '\u2014'}</p>
+          <div style="font-size:11px;color:#94a3b8;margin-bottom:6px;line-height:1.3;">
+            <div style="margin-bottom:4px;">Acct: ${anomaly.accountNumber || anomaly.accountId || '\u2014'}</div>
+            <div style="margin-bottom:4px;">Name: ${anomaly.name || anomaly.accountName || '\u2014'}</div>
+            <div style="margin-bottom:4px;">Meter: ${anomaly.meterNo || '\u2014'}</div>
+            <div>Status: ${anomaly.status || '\u2014'}</div>
+          </div>
+          ${anomaly.address ? `<p style="font-size:11px;color:#64748b;margin-bottom:10px;">${anomaly.address}</p>` : ''}
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
+            <div style="flex:1;min-width:120px;">
+              <div style="font-size:11px;color:#94a3b8;">Type</div>
+              <div style="font-weight:600;color:${color};">${ANOMALY_LABELS[anomaly.anomalyType]}</div>
+            </div>
+            <div style="flex:1;min-width:120px;">
+              <div style="font-size:11px;color:#94a3b8;">Avg</div>
+              <div style="font-weight:600;color:#94a3b8;">${anomaly.averageConsumption} cu.m.</div>
+            </div>
+            <div style="flex:1;min-width:120px;">
+              <div style="font-size:11px;color:#94a3b8;">Current</div>
+              <div style="font-weight:600;color:#94a3b8;">${anomaly.reportedReading !== undefined && anomaly.reportedReading !== null ? anomaly.reportedReading : anomaly.currentConsumption} cu.m.</div>
+            </div>
+            <div style="flex:1;min-width:120px;">
+              <div style="font-size:11px;color:#94a3b8;">Deviation</div>
+              <div style="font-weight:700;color:${anomaly.deviationPercent > 0 ? '#f87171' : '#38bdf8'};">${anomaly.deviationPercent > 0 ? '+' : ''}${anomaly.deviationPercent}%</div>
+            </div>
+          </div>
         </div>
-        ${anomaly.address ? `<p style="font-size:11px;color:#64748b;margin-bottom:10px;">${anomaly.address}</p>` : ''}
-        <div style="display:flex;flex-direction:column;gap:5px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:11px;color:#64748b;">Type</span><span style="font-size:11px;color:${color};font-weight:600;">${ANOMALY_LABELS[anomaly.anomalyType]}</span></div>
-          <div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:11px;color:#64748b;">Avg</span><span style="font-size:11px;color:#94a3b8;">${anomaly.averageConsumption} cu.m.</span></div>
-          <div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:11px;color:#64748b;">Current</span><span style="font-size:11px;color:#94a3b8;">${anomaly.currentConsumption} cu.m.</span></div>
-          <div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:11px;color:#64748b;">Deviation</span><span style="font-size:11px;font-weight:700;color:${anomaly.deviationPercent > 0 ? '#f87171' : '#38bdf8'};">${anomaly.deviationPercent > 0 ? '+' : ''}${anomaly.deviationPercent}%</span></div>
+        <div style="margin:0 14px 12px 16px;padding:6px 10px;background:rgba(255,255,255,0.06);border-radius:8px;text-align:center;">
+          <span style="font-size:10px;color:#94a3b8;text-transform:uppercase;">Severity: </span>
+          <span style="font-size:10px;font-weight:700;color:${color};text-transform:uppercase;">${anomaly.severity}</span>
         </div>
-        <div style="margin-top:10px;padding:5px 10px;background:rgba(255,255,255,0.06);border-radius:8px;text-align:center;"><span style="font-size:10px;color:#94a3b8;text-transform:uppercase;">Severity: </span><span style="font-size:10px;font-weight:700;color:${color};text-transform:uppercase;">${anomaly.severity}</span></div>
       `;
       marker.bindPopup(popupContent);
       clusterGroup.addLayer(marker);
@@ -247,28 +264,42 @@ function CanvasMarkersLayer({ anomalies }) {
       }
       if (nearest && Math.sqrt(minDist) <= 20) {
         const html = `
-          <div style="padding:14px 16px;font-family:Inter, sans-serif;">
-            <p style="font-weight:700;font-size:13px;color:#f1f5f9;margin-bottom:8px;">${nearest.accountNumber || nearest.accountId || nearest.accountName || '\u2014'}</p>
-            <div style="font-size:11px;color:#94a3b8;margin-bottom:6px;line-height:1.3;">
-              <div style="margin-bottom:4px;">Acct: ${nearest.accountNumber || nearest.accountId || '\u2014'}</div>
-              <div style="margin-bottom:4px;">Name: ${nearest.accountName || nearest.name || '\u2014'}</div>
-              <div style="margin-bottom:4px;">Meter: ${nearest.meterNo || '\u2014'}</div>
-              <div>Status: ${nearest.status || '\u2014'}</div>
+          <div style="font-family:Inter, sans-serif;">
+            <div style="padding:0 14px 12px 16px;">
+              <p style="font-weight:700;font-size:13px;color:#f1f5f9;margin-bottom:6px;">${nearest.name || nearest.accountNumber || nearest.accountId || '\u2014'}</p>
+              <div style="font-size:11px;color:#94a3b8;margin-bottom:6px;line-height:1.3;">
+                <div style="margin-bottom:4px;">Acct: ${nearest.accountNumber || nearest.accountId || '\u2014'}</div>
+                <div style="margin-bottom:4px;">Name: ${nearest.name || nearest.accountName || '\u2014'}</div>
+                <div style="margin-bottom:4px;">Meter: ${nearest.meterNo || '\u2014'}</div>
+                <div>Status: ${nearest.status || '\u2014'}</div>
+              </div>
+              ${nearest.address ? `<p style="font-size:11px;color:#64748b;margin-bottom:10px;">${nearest.address}</p>` : ''}
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
+                <div style="flex:1;min-width:120px;">
+                  <div style="font-size:11px;color:#94a3b8;">Type</div>
+                  <div style="font-weight:600;color:${ANOMALY_COLORS[nearest.anomalyType]||'#6b7280'};">${ANOMALY_LABELS[nearest.anomalyType]}</div>
+                </div>
+                <div style="flex:1;min-width:120px;">
+                  <div style="font-size:11px;color:#94a3b8;">Avg</div>
+                  <div style="font-weight:600;color:#94a3b8;">${nearest.averageConsumption} cu.m.</div>
+                </div>
+                <div style="flex:1;min-width:120px;">
+                  <div style="font-size:11px;color:#94a3b8;">Current</div>
+                  <div style="font-weight:600;color:#94a3b8;">${nearest.reportedReading !== undefined && nearest.reportedReading !== null ? nearest.reportedReading : nearest.currentConsumption} cu.m.</div>
+                </div>
+                <div style="flex:1;min-width:120px;">
+                  <div style="font-size:11px;color:#94a3b8;">Deviation</div>
+                  <div style="font-weight:700;color:${nearest.deviationPercent>0? '#f87171':'#38bdf8'};">${nearest.deviationPercent>0?'+':''}${nearest.deviationPercent}%</div>
+                </div>
+              </div>
             </div>
-            ${nearest.address ? `<p style="font-size:11px;color:#64748b;margin-bottom:10px;">${nearest.address}</p>` : ''}
-            <div style="display:flex;flex-direction:column;gap:5px;">
-              <div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:11px;color:#64748b;">Type</span><span style="font-size:11px;color:${ANOMALY_COLORS[nearest.anomalyType]||'#6b7280'};font-weight:600;">${ANOMALY_LABELS[nearest.anomalyType]}</span></div>
-              <div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:11px;color:#64748b;">Avg</span><span style="font-size:11px;color:#94a3b8;">${nearest.averageConsumption} cu.m.</span></div>
-              <div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:11px;color:#64748b;">Current</span><span style="font-size:11px;color:#94a3b8;">${nearest.currentConsumption} cu.m.</span></div>
-              <div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:11px;color:#64748b;">Deviation</span><span style="font-size:11px;font-weight:700;color:${nearest.deviationPercent>0? '#f87171':'#38bdf8'};">${nearest.deviationPercent>0?'+':''}${nearest.deviationPercent}%</span></div>
-            </div>
-            <div style="margin-top:10px;padding:5px 10px;background:rgba(255,255,255,0.06);border-radius:8px;text-align:center;">
+            <div style="margin:0 14px 12px 16px;padding:6px 10px;background:rgba(255,255,255,0.06);border-radius:8px;text-align:center;">
               <span style="font-size:10px;color:#94a3b8;text-transform:uppercase;">Severity: </span>
               <span style="font-size:10px;font-weight:700;color:${ANOMALY_COLORS[nearest.anomalyType]||'#6b7280'};text-transform:uppercase;">${nearest.severity}</span>
             </div>
           </div>
         `;
-        const popup = L.popup({ maxWidth: 220 }).setLatLng([nearest.latitude, nearest.longitude]).setContent(html);
+        const popup = L.popup({ maxWidth: 340 }).setLatLng([nearest.latitude, nearest.longitude]).setContent(html);
         map.openPopup(popup);
       }
     }
