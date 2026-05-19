@@ -156,12 +156,13 @@ export function parseGeoJSON(geojsonData, datasetLabel = '') {
 export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) {
   const anomalies = [];
 
-  // Build a lookup: accountId -> array of cumused values (chronological)
+  // Build a lookup: accountId -> array of monthly consumption values (chronological)
+  // cumUsed is already the monthly consumption (prsReading - prvReading), not cumulative
   const historyMap = {};
   for (const acc of historicalAccounts) {
     if (!acc.accountId) continue;
     if (!historyMap[acc.accountId]) historyMap[acc.accountId] = [];
-    historyMap[acc.accountId].push(Number(acc.cumUsed || 0));
+    historyMap[acc.accountId].push(Number(acc.cumUsed) || 0);
   }
 
   let skipped_no_history = 0;
@@ -171,8 +172,7 @@ export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) 
 
   for (const account of currentAccounts) {
     if (!account.accountId) continue;
-    // If cumUsed is null or undefined, handle special cases
-    let currentCumUsed = account.cumUsed;
+    const currentCumUsed = account.cumUsed;
     const isCumUsedNull = currentCumUsed === null || currentCumUsed === undefined || isNaN(Number(currentCumUsed));
     const status = (account.status || '').toLowerCase();
     const history = historyMap[account.accountId] || [];
@@ -182,16 +182,12 @@ export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) 
       continue;
     }
 
-    // Compute monthly consumptions from historical cumused values
-    // e.g., [100, 150, 200] => [50, 50] (differences between months)
-    const monthlyConsumptions = [];
-    for (let i = 1; i < history.length; i++) {
-      const diff = history[i] - history[i - 1];
-      if (diff >= 0) monthlyConsumptions.push(diff);
-    }
-    const avgPrev = monthlyConsumptions.length > 0 ? monthlyConsumptions.reduce((a, b) => a + b, 0) / monthlyConsumptions.length : 0;
+    // cumUsed values ARE already monthly consumption — average them directly
+    const positiveHistory = history.filter(v => v > 0);
+    const avgPrev = positiveHistory.length > 0
+      ? positiveHistory.reduce((a, b) => a + b, 0) / positiveHistory.length
+      : 0;
 
-    // If we can't compute an average or all history is zero, skip
     if (avgPrev === 0) {
       skipped_zero_avg++;
       continue;
@@ -199,29 +195,21 @@ export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) 
 
     let currentConsumption;
     if (isCumUsedNull) {
-      // If disconnected, skip anomaly detection for this account
       if (status === 'disconnected') {
         skipped_zero_current++;
         continue;
       }
-      // If status is NULL, ACTIVE, New, or NI-Renew, treat as not yet read
-      const isNull = status === '' || status === null || status === undefined;
-      const isActive = status === 'active';
-      const isNew = status === 'new';
-      const isNIRenew = status === 'ni-renew';
-      if (isNull || isActive || isNew || isNIRenew) {
-        // Not yet read: estimate using last 3 months' average consumption
-        const last3 = monthlyConsumptions.slice(-3);
-        currentConsumption = last3.length > 0 ? last3.reduce((a, b) => a + b, 0) / last3.length : 0;
+      const isKnownStatus = status === '' || status === 'active' || status === 'new' || status === 'ni-renew';
+      if (isKnownStatus) {
+        // Not yet read: estimate using historical average
+        currentConsumption = avgPrev;
       } else {
-        // Unknown status, skip
         skipped_zero_current++;
         continue;
       }
     } else {
-      // Compute this month's consumption as difference from last month's cum_used
-      const lastCumUsed = history.length > 0 ? history[history.length - 1] : 0;
-      currentConsumption = Number(currentCumUsed) - lastCumUsed;
+      // Use this month's cumUsed directly as the monthly consumption
+      currentConsumption = Number(currentCumUsed);
     }
 
     if (currentConsumption === 0 && avgPrev > 0) {

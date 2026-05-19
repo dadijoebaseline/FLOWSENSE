@@ -50,9 +50,24 @@ async function loadDatasetAccounts(dataset) {
     }));
 }
 
+/** @type {Promise<any[]> | null} */
+let _allAccountsPromise = null;
+
 async function loadAllAccounts() {
-  const accountLists = await Promise.all(AVAILABLE_DATASETS.map(loadDatasetAccounts));
-  return accountLists.flat();
+  if (!_allAccountsPromise) {
+    _allAccountsPromise = Promise.all(AVAILABLE_DATASETS.map(loadDatasetAccounts))
+      .then(lists => lists.flat())
+      .catch(err => {
+        _allAccountsPromise = null; // allow retry on failure
+        throw err;
+      });
+  }
+  return _allAccountsPromise;
+}
+
+/** Force a fresh reload of all account data (e.g. after new files uploaded) */
+export function invalidateAccountsCache() {
+  _allAccountsPromise = null;
 }
 
 /**
@@ -72,11 +87,9 @@ export const staticDataService = {
      * @param {number} [months=3]
      */
     async getAccountHistory(accountId, months = 3) {
-      // Load all accounts from all datasets
       const allAccounts = await loadAllAccounts();
-      // Sort datasets by month ascending
       const sortedDatasets = sortMonths(AVAILABLE_DATASETS.map(d => d.id));
-      // Build a map of datasetId -> account record
+
       /** @type {Record<string, any>} */
       const accountMap = {};
       for (const acc of allAccounts) {
@@ -84,19 +97,27 @@ export const staticDataService = {
           accountMap[acc.datasetId] = acc;
         }
       }
-      // Use cumUsed as the monthly consumption directly (not cumulative)
+
+      const matchedMonths = Object.keys(accountMap);
+      if (matchedMonths.length === 0) {
+        console.warn(`[getAccountHistory] No data found for accountId="${accountId}". Total accounts loaded: ${allAccounts.length}`);
+      }
+
+      // cumUsed is already monthly consumption (prsReading - prvReading), use it directly
       const trend = sortedDatasets.map(month => {
         const acc = accountMap[month];
+        const cumUsed = acc ? Number(acc.cumUsed) : NaN;
         return {
           month,
-          consumption: acc && acc.cumUsed != null ? Number(acc.cumUsed) : null,
+          consumption: acc && !isNaN(cumUsed) ? cumUsed : null,
         };
       });
-      // If not enough data, pad with nulls at the start
+
+      // Pad with nulls at the start if fewer datasets than requested months
       while (trend.length < months) {
-        trend.unshift({ month: sortedDatasets[trend.length], consumption: null });
+        trend.unshift({ month: null, consumption: null });
       }
-      // Return only the last N months
+
       return trend.slice(-months);
     },
   async getDatasets() {

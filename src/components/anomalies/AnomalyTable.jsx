@@ -52,12 +52,24 @@ export default function AnomalyTable({ anomalies }) {
     let mounted = true;
     console.log('DEBUG: useEffect triggered, selected:', selected);
     if (!selected) return () => { mounted = false };
+    const accountKey = selected.accountId || selected.accountNumber;
+    if (!accountKey) {
+      setHistory([]);
+      return () => { mounted = false };
+    }
     (async () => {
       setHistLoading(true);
       try {
-        const h = await staticDataService.getAccountHistory(selected.accountId, 3);
+        let h = await staticDataService.getAccountHistory(accountKey, 3);
+        // Map cumUsed to consumption for chart compatibility
+        if (Array.isArray(h)) {
+          h = h.map(entry => ({
+            ...entry,
+            consumption: entry.consumption ?? entry.cumUsed ?? null
+          }));
+        }
         if (mounted) {
-          console.log('DEBUG: Account history for trend', selected.accountId, h);
+          console.log('DEBUG: Account history for trend', accountKey, h);
           setHistory(h);
         }
       } catch (e) {
@@ -70,7 +82,7 @@ export default function AnomalyTable({ anomalies }) {
   }, [selected]);
 
   function openDetails(anomaly) {
-    console.log('DEBUG: openDetails called with anomaly:', anomaly);
+    alert('openDetails fired! Name: ' + (anomaly.name || anomaly.accountNumber));
     setSelected(anomaly);
     setDialogOpen(true);
   }
@@ -323,32 +335,52 @@ export default function AnomalyTable({ anomalies }) {
                 <div className="font-semibold text-xs text-slate-400 mb-2">3-Month Consumption Trend</div>
                 {histLoading ? (
                   <div className="text-xs text-slate-500">Loading...</div>
-                ) : history && history.length > 0 ? (
-                  <ChartContainer style={{ height: 180 }} config={{}}>
-                    <AreaChart data={history} margin={{ left: 10, right: 10, top: 10, bottom: 10 }}>
-                      <defs>
-                        <linearGradient id="colorCons" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#38bdf8" stopOpacity={0.7} />
-                          <stop offset="100%" stopColor="#38bdf8" stopOpacity={0.1} />
-                        </linearGradient>
-                      </defs>
-                      <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                      <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} width={32} />
-                      <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                      <Tooltip contentStyle={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 8, fontSize: 12, color: '#e2e8f0' }} />
-                      <Area 
-                        type="monotone"
-                        dataKey="consumption"
-                        stroke="#38bdf8"
-                        fill="url(#colorCons)"
-                        strokeWidth={2}
-                        dot={{ r: 3 }}
-                      />
-                    </AreaChart>
-                  </ChartContainer>
                 ) : (
-                  <div className="text-xs text-slate-500">No consumption history available.</div>
-                )}
+                  <>
+                    <div style={{background:'#222',color:'#fff',padding:'8px',marginBottom:'8px',fontSize:'12px',borderRadius:'4px'}}>
+                      <strong>DEBUG: Lookup Key:</strong> {selected?.accountId || selected?.accountNumber || 'N/A'}<br/>
+                      <strong>DEBUG: history data for chart:</strong>
+                      <pre style={{whiteSpace:'pre-wrap',wordBreak:'break-all'}}>{JSON.stringify(history,null,2)}</pre>
+                    </div>
+                    {history && history.length > 0 ? (
+                      <>
+                        {!selected?.accountId && !selected?.accountNumber && (
+                          <div style={{background:'#a00',color:'#fff',padding:'8px',marginBottom:'8px',fontSize:'12px',borderRadius:'4px'}}>
+                            <strong>WARNING:</strong> No accountId or accountNumber found for this anomaly. Trend chart cannot load.
+                          </div>
+                        )}
+                        <div style={{background:'#222',color:'#fff',padding:'8px',marginBottom:'8px',fontSize:'12px',borderRadius:'4px'}}>
+                          <strong>DEBUG: history data for chart:</strong>
+                          <pre style={{whiteSpace:'pre-wrap',wordBreak:'break-all'}}>{JSON.stringify(history,null,2)}</pre>
+                        </div>
+                        <ChartContainer style={{ height: 180 }} config={{}}>
+                          <AreaChart data={history} margin={{ left: 10, right: 10, top: 10, bottom: 10 }}>
+                            <defs>
+                              <linearGradient id="colorCons" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#38bdf8" stopOpacity={0.7} />
+                                <stop offset="100%" stopColor="#38bdf8" stopOpacity={0.1} />
+                              </linearGradient>
+                            </defs>
+                            <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                            <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} width={32} />
+                            <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                            <Tooltip contentStyle={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 8, fontSize: 12, color: '#e2e8f0' }} />
+                            <Area 
+                              type="monotone"
+                              dataKey="consumption"
+                              stroke="#38bdf8"
+                              fill="url(#colorCons)"
+                              strokeWidth={2}
+                              dot={{ r: 3 }}
+                            />
+                          </AreaChart>
+                        </ChartContainer>
+                      </>
+                    ) : (
+                      <div className="text-xs text-slate-500">No consumption history available.</div>
+                    )}
+                </>
+              )}
               </div>
             </>
           )}
