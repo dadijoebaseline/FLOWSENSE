@@ -104,7 +104,11 @@ export const staticDataService = {
       }
 
       // cumUsed is already monthly consumption (prsReading - prvReading), use it directly
-      const trend = sortedDatasets.map(month => {
+      // Find the index of the latest month with data for this account
+      const lastMonthIdx = sortedDatasets.reduce((idx, month, i) => accountMap[month] ? i : idx, -1);
+      // Get previous 3 months (including current if present)
+      const trendMonths = lastMonthIdx >= 2 ? sortedDatasets.slice(lastMonthIdx - 2, lastMonthIdx + 1) : sortedDatasets.slice(0, 3);
+      const trend = trendMonths.map(month => {
         const acc = accountMap[month];
         const cumUsed = acc ? Number(acc.cumUsed) : NaN;
         return {
@@ -112,13 +116,11 @@ export const staticDataService = {
           consumption: acc && !isNaN(cumUsed) ? cumUsed : null,
         };
       });
-
-      // Pad with nulls at the start if fewer datasets than requested months
-      while (trend.length < months) {
+      // Pad with nulls at the start if fewer than 3 months
+      while (trend.length < 3) {
         trend.unshift({ month: null, consumption: null });
       }
-
-      return trend.slice(-months);
+      return trend;
     },
   async getDatasets() {
     const allAccounts = await loadAllAccounts();
