@@ -34,18 +34,22 @@ const CustomPieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent })
   );
 };
 
-export function AnomalyPieChart({ anomalies }) {
-  const data = Object.entries(
-    anomalies.reduce((acc, a) => {
-      const key = a.anomalyType || a.anomaly_type || 'unknown';
-      acc[key] = (acc[key] || 0) + 1;
-      return acc;
-    }, {})
-  ).map(([type, count]) => ({
+export function computeAnomalyDistribution(anomalies) {
+  const counts = anomalies.reduce((acc, a) => {
+    const key = a.anomalyType || a.anomaly_type || 'unknown';
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+  return Object.entries(counts).map(([type, count]) => ({
+    type,
     name: ANOMALY_LABELS[type] || type,
     value: count,
     color: ANOMALY_COLORS[type] || '#6b7280',
   }));
+}
+
+export function AnomalyPieChart({ anomalies }) {
+  const data = computeAnomalyDistribution(anomalies);
 
   if (data.length === 0) {
     return (
