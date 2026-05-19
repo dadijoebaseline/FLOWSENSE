@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { staticDataService } from '@/lib/staticDataService';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { ChartContainer } from '@/components/ui/chart';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from 'recharts';
-import { Input } from '@/components/ui/input';
+import { AreaChart, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ANOMALY_LABELS } from '@/lib/anomalyDetection';
 import {
@@ -14,7 +13,7 @@ import {
   PaginationPrevious,
   PaginationNext,
 } from '@/components/ui/pagination';
-import { Search, ArrowUpRight, ArrowDownRight, Minus, SlidersHorizontal } from 'lucide-react';
+import { Search, ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const typeConfig = {

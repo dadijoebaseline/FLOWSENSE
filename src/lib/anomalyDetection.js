@@ -320,8 +320,6 @@ export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) 
     }
   }
 
-  console.log(`[detectAnomaliesWithHistory] Processed ${currentAccounts.length} accounts. Flagged: ${flagged_anomalies}, Skipped (no history): ${skipped_no_history}, Skipped (zero avg): ${skipped_zero_avg}, Skipped (zero current): ${skipped_zero_current}`);
-
   return anomalies;
 }
 

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 // Marker clustering
 import 'leaflet.markercluster/dist/MarkerCluster.css';

@@ -219,15 +219,11 @@ export const staticDataService = {
         }
         if (isNaN(latestConsumption)) latestConsumption = 0;
         if (latestConsumption > 0) {
-          console.log(`[getAnomalies] Removing zero_consumption for ${a.accountNumber} (${a.datasetId}) because later dataset ${la.datasetId} has consumption=${latestConsumption}`);
           return false;
         }
       }
       return true;
     });
-
-    console.log('[getAnomalies] Total calculated anomalies before=', anomalies.length, 'after=', filtered.length);
-    if (filtered.length > 0) console.log('[getAnomalies] Sample anomalies:', filtered.slice(0, 3));
 
     return filtered;
   },

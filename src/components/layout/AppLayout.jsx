@@ -11,10 +11,7 @@ import {
   Menu,
   X,
   LogOut,
-  Droplets,
   ChevronRight,
-  User,
-  Activity,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -34,7 +31,7 @@ export default function AppLayout() {
       try {
         const ds = await staticDataService.getDatasets();
         if (!mounted) return;
-        const errs = ds.filter(d => d.load_error).map(d => `${d.file}: ${d.load_error}`);
+        const errs = ds.filter(d => d.loadError).map(d => `${d.file}: ${d.loadError}`);
         setDatasetErrors(errs);
       } catch (e) {
         // ignore

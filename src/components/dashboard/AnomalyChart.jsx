@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  PieChart, Pie, Cell, BarChart, Bar, AreaChart, Area, XAxis, YAxis,
+  PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis,
     Tooltip, ResponsiveContainer, Legend, CartesianGrid,
 } from 'recharts';
 import { ANOMALY_COLORS, ANOMALY_LABELS } from '@/lib/anomalyDetection';
