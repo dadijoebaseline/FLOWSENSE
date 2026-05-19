@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 // Marker clustering
@@ -10,6 +10,8 @@ import { ANOMALY_COLORS, ANOMALY_LABELS } from '@/lib/anomalyDetection';
 
 
 const severityRadius = { low: 6, medium: 9, high: 12, critical: 16 };
+
+const DEFAULT_CANVAS_THRESHOLD = 1500;
 
 const popupStyle = `
   .leaflet-popup-content-wrapper {
@@ -39,24 +41,34 @@ export default function AnomalyMap({ anomalies, height = '500px' }) {
     return [avgLat, avgLng];
   }, [validAnomalies]);
 
-  const containerStyleBase = { border: '1px solid rgba(255,255,255,0.07)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' };
+  const containerStyleBase = { position: 'relative', border: '1px solid rgba(255,255,255,0.07)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' };
   const useClassHeight = typeof height === 'string' && height.includes('h-');
   const containerClassName = `rounded-2xl overflow-hidden w-full ${useClassHeight ? height : ''}`.trim();
   const containerStyle = useClassHeight ? containerStyleBase : { ...containerStyleBase, height };
+  const [renderMode, setRenderMode] = useState('auto'); // 'auto' | 'cluster' | 'canvas'
+  const useCanvas = renderMode === 'canvas' || (renderMode === 'auto' && validAnomalies.length > DEFAULT_CANVAS_THRESHOLD);
 
   return (
     <>
       <style>{popupStyle}</style>
       <div className={containerClassName} style={containerStyle}>
-        <MapContainer center={center} zoom={11} className="w-full h-full" scrollWheelZoom={true} zoomControl={true}>
+            <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 600, background: 'rgba(15,17,26,0.9)', padding: '6px 8px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.06)' }}>
+              <label style={{ marginRight: 8, fontSize: 12, color: '#94a3b8' }}>Markers</label>
+              <select value={renderMode} onChange={e => setRenderMode(e.target.value)} style={{ background: 'transparent', color: '#e2e8f0', border: 'none', outline: 'none' }}>
+                <option value="auto">Auto</option>
+                <option value="cluster">Cluster</option>
+                <option value="canvas">Canvas</option>
+              </select>
+            </div>
+            <MapContainer center={center} zoom={11} className="w-full h-full" scrollWheelZoom={true} zoomControl={true}>
           {/* Dark map tiles from CartoDB */}
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>'
             url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
           />
 
-          {/* Marker rendering: use Canvas for large datasets, else cluster */}
-          {validAnomalies.length > 1500 ? (
+          {/* Marker rendering: user-selectable: auto/cluster/canvas */}
+                    {useCanvas ? (
             <CanvasMarkersLayer anomalies={validAnomalies} />
           ) : (
             <MarkersClusterLayer anomalies={validAnomalies} />
@@ -159,9 +171,13 @@ function CanvasMarkersLayer({ anomalies }) {
     const pane = map.getPanes().overlayPane;
     const canvas = L.DomUtil.create('canvas', 'leaflet-canvas-markers');
     canvas.style.position = 'absolute';
-    canvas.style.pointerEvents = 'auto';
-    const ctx = canvas.getContext('2d');
-    const ratio = window.devicePixelRatio || 1;
+        canvas.style.left = '0px';
+        canvas.style.top = '0px';
+        canvas.style.pointerEvents = 'auto';
+        canvas.style.touchAction = 'none';
+        canvas.style.zIndex = 600;
+        const ctx = canvas.getContext('2d');
+        const ratio = window.devicePixelRatio || 1;
 
     function resize() {
       const size = map.getSize();
@@ -198,9 +214,10 @@ function CanvasMarkersLayer({ anomalies }) {
 
     pane.appendChild(canvas);
     map.on('move', onViewChange);
-    map.on('zoomend', onViewChange);
-    map.on('resize', onResize);
-    resize();
+        map.on('zoom', onViewChange);
+        map.on('zoomend', onViewChange);
+        map.on('resize', onResize);
+        resize();
 
     function onClick(e) {
       const clickPoint = e.containerPoint || map.latLngToContainerPoint(e.latlng);
@@ -239,10 +256,11 @@ function CanvasMarkersLayer({ anomalies }) {
 
     return () => {
       map.off('move', onViewChange);
-      map.off('zoomend', onViewChange);
-      map.off('resize', onResize);
-      map.off('click', onClick);
-      try { pane.removeChild(canvas); } catch (e) {}
+            map.off('zoom', onViewChange);
+            map.off('zoomend', onViewChange);
+            map.off('resize', onResize);
+            map.off('click', onClick);
+            try { pane.removeChild(canvas); } catch (e) {}
     };
   }, [anomalies, map]);
 
