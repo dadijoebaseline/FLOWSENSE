@@ -96,6 +96,8 @@ export function parseGeoJSON(geojsonData, datasetLabel = '') {
     // Always use cumUsed as the monthly usage for this month
     let cumUsedRaw = props.cumUsed ?? props.cumused ?? props.CumUsed ?? props.cum_used ?? props.Cum_Used;
     let status = (props.status ?? props.Status ?? '').toString().toUpperCase();
+    // Preserve original raw value (if present) for precise zero-detection.
+    const rawCumUsed = Number.isFinite(Number(cumUsedRaw)) ? Number(cumUsedRaw) : null;
     let cumUsed = Number(cumUsedRaw);
     if (cumUsedRaw === null || cumUsedRaw === undefined || isNaN(cumUsed) || ["DISCONNECTED", "NEW", "RENEWED"].includes(status)) {
       cumUsed = 0;
@@ -136,7 +138,7 @@ export function parseGeoJSON(geojsonData, datasetLabel = '') {
       status: props.status ?? props.Status ?? '',
       prvReading,
       prsReading,
-      cumUsed, // Canonical field for monthly usage
+      cumUsed, rawCumUsed, // Canonical field for monthly usage (rawCumUsed preserves original provided reading, or null)
       billAmount: Number(props.billAmount ?? props.BillAmount) || 0,
       year: props.year ?? props.Year ?? null,
       month: props.month ?? props.Month ?? '',
@@ -178,9 +180,11 @@ export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) 
   for (const account of currentAccounts) {
     if (!account.accountId) continue;
     const currentCumUsed = account.cumUsed;
-    const isCumUsedNull = currentCumUsed === null || currentCumUsed === undefined || isNaN(Number(currentCumUsed));
-    const status = (account.status || '').toLowerCase();
-    const history = historyMap[account.accountId] || [];
+  const rawCumUsed = account.rawCumUsed ?? null;
+  const hasRawCumUsed = rawCumUsed !== null && rawCumUsed !== undefined && !isNaN(Number(rawCumUsed));
+  const isCumUsedNull = !hasRawCumUsed;
+  const status = (account.status || '').toLowerCase();
+  const history = historyMap[account.accountId] || [];
 
     if (history.length === 0) {
       skipped_no_history++;
@@ -217,7 +221,8 @@ export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) 
       currentConsumption = Number(currentCumUsed);
     }
 
-    if (currentConsumption === 0 && avgPrev > 0) {
+    // Only treat as zero_consumption anomaly when the raw provided reading was explicitly zero and account status is ACTIVE
+    if (hasRawCumUsed && Number(rawCumUsed) === 0 && avgPrev > 0 && status === 'active') {
       anomalies.push({
         accountNumber: account.accountId,
         name: account.accountName || '',
