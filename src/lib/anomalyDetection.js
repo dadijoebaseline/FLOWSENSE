@@ -267,8 +267,10 @@ export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) 
 
     const deviationPercent = ((currentConsumption - avgPrev) / avgPrev) * 100;
 
-    // Sudden High: consumption ≥ 30% above average
-    if (currentConsumption >= avgPrev * 1.30) {
+    const difference = currentConsumption - avgPrev;
+
+    // Sudden High: consumption ≥ 30% above average and absolute increase > 30
+    if (currentConsumption >= avgPrev * 1.30 && difference > 30) {
       anomalies.push({
         accountNumber: account.accountId,
         name: account.accountName || '',
@@ -287,8 +289,8 @@ export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) 
       });
       flagged_anomalies++;
     }
-    // Sudden Down: consumption ≤ 30% below average
-    else if (currentConsumption <= avgPrev * 0.70) {
+    // Sudden Down: consumption ≤ 30% below average, only for active accounts, and absolute drop > 30
+    else if (status === 'active' && currentConsumption <= avgPrev * 0.70 && -difference > 30) {
       anomalies.push({
         accountNumber: account.accountId,
         name: account.accountName || '',
