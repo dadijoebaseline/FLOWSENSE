@@ -34,7 +34,7 @@ const severityColors = {
   critical: 'text-red-400 bg-red-500/10',
 };
 
-export default function RecentAnomalies({ anomalies }) {
+export default function RecentAnomalies({ anomalies, className = '' }) {
   const recent = anomalies.slice(0, 7);
 
   return (
@@ -42,7 +42,7 @@ export default function RecentAnomalies({ anomalies }) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.2, ease: [0.23, 1, 0.32, 1] }}
-      className="rounded-2xl p-6 flex flex-col"
+      className={`rounded-2xl p-6 flex flex-col ${className}`}
       style={{
         background: 'rgba(255,255,255,0.03)',
         border: '1px solid rgba(255,255,255,0.07)',

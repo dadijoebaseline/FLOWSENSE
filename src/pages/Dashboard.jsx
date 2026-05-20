@@ -94,9 +94,9 @@ export default function Dashboard() {
       </div>
 
       {/* Map + Recent */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 items-stretch">
         <motion.div
-          className="lg:col-span-3"
+          className="lg:col-span-3 flex flex-col h-full"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
@@ -105,10 +105,15 @@ export default function Dashboard() {
             <h3 className="text-sm font-semibold text-white font-space">Anomaly Map</h3>
             <span className="text-xs text-slate-500">{anomalies.filter(a => a.latitude).length} plotted</span>
           </div>
-          <AnomalyMap anomalies={anomalies} height="h-56 sm:h-72 md:h-80 lg:h-96" />
+          <div className="flex-1">
+            <AnomalyMap anomalies={anomalies} height="h-full" />
+          </div>
         </motion.div>
-        <div className="lg:col-span-2">
-          <RecentAnomalies anomalies={anomalies.map(a => ({ ...a, _onClick: () => window.dispatchEvent(new CustomEvent('anomaly:open', { detail: a })) }))} />
+        <div className="lg:col-span-2 flex flex-col h-full">
+          <RecentAnomalies
+            className="h-full"
+            anomalies={anomalies.map(a => ({ ...a, _onClick: () => window.dispatchEvent(new CustomEvent('anomaly:open', { detail: a })) }))}
+          />
         </div>
       </div>
 
