@@ -1,6 +1,13 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import { auth, googleProvider } from './firebase.js';
+import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
 
 const AuthContext = createContext();
+
+const normalizeEmail = (email) => String(email || '').trim().toLowerCase();
+const ADMIN_EMAIL = normalizeEmail(import.meta.env.VITE_ADMIN_EMAIL || '');
+
+const getRoleFromEmail = (email) => (normalizeEmail(email) === ADMIN_EMAIL ? 'admin' : 'viewer');
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -15,84 +22,71 @@ export const AuthProvider = ({ children }) => {
   });
 
   useEffect(() => {
-    const fetchSession = async () => {
-      setIsLoadingAuth(true);
-      try {
-        const response = await fetch('/api/auth/session');
-        if (response.ok) {
-          const payload = await response.json();
-          if (payload.authenticated) {
-            setUser(payload.user);
-            setIsAuthenticated(true);
-            setAuthError(null);
-          } else {
-            setUser(null);
-            setIsAuthenticated(false);
-            setAuthError({ type: 'auth_required', message: 'Please log in.' });
-          }
+    setIsLoadingAuth(true);
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      (firebaseUser) => {
+        if (firebaseUser) {
+          const email = firebaseUser.email || '';
+          setUser({
+            id: firebaseUser.uid,
+            name: firebaseUser.displayName || 'User',
+            email,
+            role: getRoleFromEmail(email),
+          });
+          setIsAuthenticated(true);
+          setAuthError(null);
         } else {
           setUser(null);
           setIsAuthenticated(false);
-          setAuthError({ type: 'auth_required', message: 'Please log in.' });
         }
-      } catch (error) {
+        setIsLoadingAuth(false);
+        setAuthChecked(true);
+      },
+      (error) => {
         setUser(null);
         setIsAuthenticated(false);
-        setAuthError({ type: 'server_error', message: 'Unable to check authentication.' });
-      } finally {
+        setAuthError({ type: 'server_error', message: error.message || 'Unable to verify authentication.' });
         setIsLoadingAuth(false);
         setAuthChecked(true);
       }
-    };
+    );
 
-    fetchSession();
+    return unsubscribe;
   }, []);
 
-  const navigateToLogin = () => {
-    if (typeof window !== 'undefined') {
-      window.location.href = '/login';
+  const login = async () => {
+    setAuthError(null);
+    try {
+      const response = await signInWithPopup(auth, googleProvider);
+      const firebaseUser = response.user;
+      const email = firebaseUser.email || '';
+      setUser({
+        id: firebaseUser.uid,
+        name: firebaseUser.displayName || 'User',
+        email,
+        role: getRoleFromEmail(email),
+      });
+      setIsAuthenticated(true);
+      return { success: true };
+    } catch (error) {
+      const message = error?.message || 'Google sign-in failed.';
+      setAuthError({ type: 'sign_in_failed', message });
+      return { success: false, error: 'sign_in_failed', message };
     }
   };
 
-  const login = async (email) => {
-    try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        return { success: false, error: data.error };
-      }
-      return { success: true, ...data };
-    } catch (error) {
-      return { success: false, error: 'server_error', message: error.message };
-    }
-  };
-
-  const signup = async ({ name, email }) => {
-    try {
-      const response = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email }),
-      });
-      const data = await response.json();
-      if (!response.ok && response.status !== 200 && response.status !== 201) {
-        return { success: false, error: data.error };
-      }
-      return { success: true, ...data };
-    } catch (error) {
-      return { success: false, error: 'server_error', message: error.message };
-    }
-  };
+  const signup = async () => ({
+    success: false,
+    error: 'signup_disabled',
+    message: 'Sign up is handled through Firebase Google sign-in.',
+  });
 
   const logout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      await signOut(auth);
     } catch (error) {
-      // ignore
+      // ignore failures during sign out
     }
     setUser(null);
     setIsAuthenticated(false);
@@ -108,21 +102,22 @@ export const AuthProvider = ({ children }) => {
   const checkAppState = async () => true;
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      isAuthenticated,
-      isLoadingAuth,
-      isLoadingPublicSettings,
-      authError,
-      appPublicSettings,
-      authChecked,
-      logout,
-      navigateToLogin,
-      checkUserAuth,
-      checkAppState,
-      login,
-      signup,
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated,
+        isLoadingAuth,
+        isLoadingPublicSettings,
+        authError,
+        appPublicSettings,
+        authChecked,
+        logout,
+        checkUserAuth,
+        checkAppState,
+        login,
+        signup,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

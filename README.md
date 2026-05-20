@@ -138,6 +138,8 @@ This project uses Vercel KV for account storage and a magic-link email auth flow
 - `EMAIL_FROM`
 - `ADMIN_EMAIL`
 - `SITE_URL` or rely on `VERCEL_URL`
+
+Note: the first real signup request becomes the admin automatically. Subsequent signups require admin approval.
 ```
 
 ## License
