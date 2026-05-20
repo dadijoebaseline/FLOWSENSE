@@ -28,7 +28,25 @@ export default async function handler(req, res) {
     }
 
     const user = await createPendingUser({ name, email });
-    await notifyAdminOfSignup(user);
+    if (!user) {
+      return sendResponse(res, 409, { error: 'already_registered' });
+    }
+
+    if (user.status === 'approved' && user.role === 'admin') {
+      return sendResponse(res, 201, {
+        success: true,
+        pending: false,
+        adminApproved: true,
+        message: 'First signup registered as admin and approved automatically.',
+      });
+    }
+
+    try {
+      await notifyAdminOfSignup(user);
+    } catch (notifyError) {
+      console.error('Failed to notify admin of signup:', notifyError);
+    }
+
     return sendResponse(res, 201, {
       success: true,
       pending: true,
