@@ -7,7 +7,7 @@ import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import 'leaflet.markercluster';
 import L from 'leaflet';
 import { ANOMALY_COLORS, ANOMALY_LABELS } from '@/lib/anomalyDetection';
-
+import { getStatusBadgeHtml } from '@/lib/utils';
 
 const severityRadius = { low: 6, medium: 9, high: 12, critical: 16 };
 
@@ -136,6 +136,7 @@ function MarkersClusterLayer({ anomalies }) {
         fillOpacity: 0.85,
         weight: 1,
       });
+      const statusBadgeHtml = getStatusBadgeHtml(anomaly.status);
       const popupContent = document.createElement('div');
       popupContent.style.padding = '14px 16px';
       popupContent.style.fontFamily = 'Inter, sans-serif';
@@ -146,7 +147,7 @@ function MarkersClusterLayer({ anomalies }) {
             <div style="margin-bottom:4px;">Acct: ${anomaly.accountNumber || anomaly.accountId || '\u2014'}</div>
             <div style="margin-bottom:4px;">Name: ${anomaly.name || anomaly.accountName || '\u2014'}</div>
             <div style="margin-bottom:4px;">Meter: ${anomaly.meterNo || '\u2014'}</div>
-            <div>Status: ${anomaly.status || '\u2014'}</div>
+            <div>Status: ${statusBadgeHtml}</div>
           </div>
           ${anomaly.address ? `<p style="font-size:11px;color:#64748b;margin-bottom:10px;">${anomaly.address}</p>` : ''}
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
@@ -263,6 +264,7 @@ function CanvasMarkersLayer({ anomalies }) {
         if (distSq < minDist) { minDist = distSq; nearest = anomaly; }
       }
       if (nearest && Math.sqrt(minDist) <= 20) {
+        const statusBadgeHtml = getStatusBadgeHtml(nearest.status);
         const html = `
           <div style="font-family:Inter, sans-serif;">
             <div style="padding:0 14px 12px 16px;">
@@ -271,7 +273,7 @@ function CanvasMarkersLayer({ anomalies }) {
                 <div style="margin-bottom:4px;">Acct: ${nearest.accountNumber || nearest.accountId || '\u2014'}</div>
                 <div style="margin-bottom:4px;">Name: ${nearest.name || nearest.accountName || '\u2014'}</div>
                 <div style="margin-bottom:4px;">Meter: ${nearest.meterNo || '\u2014'}</div>
-                <div>Status: ${nearest.status || '\u2014'}</div>
+                <div>Status: ${statusBadgeHtml}</div>
               </div>
               ${nearest.address ? `<p style="font-size:11px;color:#64748b;margin-bottom:10px;">${nearest.address}</p>` : ''}
               <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">

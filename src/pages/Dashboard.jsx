@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { ChartContainer } from '@/components/ui/chart';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { ANOMALY_LABELS } from '@/lib/anomalyDetection';
+import { getStatusBadgeClass } from '@/lib/utils';
 import { staticDataService } from '@/lib/staticDataService';
 import StatsCard from '@/components/dashboard/StatsCard';
 import { AnomalyPieChart, AnomalySeverityChart } from '@/components/dashboard/AnomalyChart';
@@ -169,7 +170,9 @@ export default function Dashboard() {
                     <div className="font-semibold text-base text-slate-200">{selectedAnomaly.name || selectedAnomaly.accountNumber || selectedAnomaly.accountId}</div>
                     <div className="text-xs text-slate-500 font-mono">Account: {selectedAnomaly.accountNumber || selectedAnomaly.accountId}</div>
                     <div className="text-xs text-slate-500 font-mono">Meter: {selectedAnomaly.meterNo || '\u2014'}</div>
-                    <div className="text-xs text-slate-500 font-mono">Status: {selectedAnomaly.status || '\u2014'}</div>
+                    <div className="text-xs text-slate-500 font-mono">
+                      Status: <span className={getStatusBadgeClass(selectedAnomaly.status)}>{(selectedAnomaly.status || 'N/A').toString().toUpperCase()}</span>
+                    </div>
                     {selectedAnomaly.address && <div className="text-xs text-slate-400 mt-1">{selectedAnomaly.address}</div>}
                   </div>
                   <div className="flex gap-4 mb-2">

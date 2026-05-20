@@ -4,8 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { ChartContainer } from '@/components/ui/chart';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ANOMALY_LABELS } from '@/lib/anomalyDetection';
-import {
+import { ANOMALY_LABELS } from '@/lib/anomalyDetection';import { getStatusBadgeClass } from '@/lib/utils';import {
   Pagination,
   PaginationContent,
   PaginationItem,
@@ -316,7 +315,9 @@ export default function AnomalyTable({ anomalies, initialType = 'all', initialSe
                     <div className="font-semibold text-base text-slate-200">{selected.name || selected.accountNumber || selected.accountId}</div>
                     <div className="text-xs text-slate-500 font-mono">Account: {selected.accountNumber || selected.accountId}</div>
                     <div className="text-xs text-slate-500 font-mono">Meter: {selected.meterNo || '\u2014'}</div>
-                    <div className="text-xs text-slate-500 font-mono">Status: {selected.status || '\u2014'}</div>
+                    <div className="text-xs text-slate-500 font-mono">
+                      Status: <span className={getStatusBadgeClass(selected.status)}>{(selected.status || 'N/A').toString().toUpperCase()}</span>
+                    </div>
                     {selected.address && <div className="text-xs text-slate-400 mt-1">{selected.address}</div>}
                   </div>
                   <div className="flex gap-4 mb-2">
