@@ -33,9 +33,6 @@ export default function Login() {
         <div className="mb-8 text-center">
           <p className="text-sm uppercase tracking-[0.3em] text-sky-300">FlowSense access</p>
           <h1 className="mt-4 text-3xl font-semibold text-white">Sign in with Google</h1>
-          <p className="mt-3 text-sm text-slate-400">
-            Authenticate through Firebase and use your Google account to access the dashboard.
-          </p>
         </div>
 
         {message && (
@@ -57,12 +54,6 @@ export default function Login() {
           >
             Sign in with Google
           </button>
-
-          <div className="rounded-2xl border border-slate-700 bg-slate-950/80 px-5 py-4 text-sm text-slate-300">
-            <p>
-              To sign in as administrator, set <strong>VITE_ADMIN_EMAIL</strong> to your admin Google address in your environment.
-            </p>
-          </div>
         </div>
       </div>
     </div>
