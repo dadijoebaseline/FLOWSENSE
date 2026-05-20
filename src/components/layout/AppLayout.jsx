@@ -6,6 +6,7 @@ import { staticDataService } from '@/lib/staticDataService';
 import {
   LayoutDashboard,
   TrendingUp,
+  UserCheck,
   AlertTriangle,
   Map,
   Menu,
@@ -43,6 +44,7 @@ export default function AppLayout() {
   const navItems = [
     perms.canViewDashboard && { path: '/', label: 'Dashboard', icon: LayoutDashboard },
     perms.canViewAnalytics && { path: '/analytics', label: 'Analytics', icon: TrendingUp },
+    perms.canApproveUsers && { path: '/admin/users', label: 'Approvals', icon: UserCheck },
     perms.canViewAnomalyList && { path: '/anomalies', label: 'Anomalies', icon: AlertTriangle },
     perms.canViewMap && { path: '/map', label: 'Map', icon: Map },
   ].filter(Boolean);

@@ -8,6 +8,7 @@ export const ROLE_PERMISSIONS = {
     canViewDashboard: true,
     canViewMap: true,
     canViewAnomalyList: true,
+    canApproveUsers: true,
     canTriggerDetection: true,
   },
   manager: {

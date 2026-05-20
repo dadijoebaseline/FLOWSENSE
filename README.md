@@ -121,10 +121,23 @@ src/
 ├── pages/         # Route components
 ├── lib/           # Utilities and business logic
 ├── hooks/         # Custom React hooks
-└── api/           # (Empty - static version)
+└── api/           # Vercel serverless auth and admin APIs
 
 public/
 └── data/          # GeoJSON data files
+
+### Vercel backend configuration
+
+This project uses Vercel KV for account storage and a magic-link email auth flow. Set the following environment variables in Vercel:
+
+- `SMTP_HOST`
+- `SMTP_PORT`
+- `SMTP_USER`
+- `SMTP_PASS`
+- `SMTP_SECURE` (optional, `true` or `false`)
+- `EMAIL_FROM`
+- `ADMIN_EMAIL`
+- `SITE_URL` or rely on `VERCEL_URL`
 ```
 
 ## License
