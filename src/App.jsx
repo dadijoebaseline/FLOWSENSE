@@ -8,7 +8,7 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 
 import AppLayout from '@/components/layout/AppLayout';
 import Dashboard from '@/pages/Dashboard';
-import Upload from '@/pages/Upload';
+import Analytics from '@/pages/Upload';
 import Anomalies from '@/pages/Anomalies';
 import MapView from '@/pages/MapView';
 
@@ -39,7 +39,7 @@ const AuthenticatedApp = () => {
     <Routes>
       <Route element={<AppLayout />}>
         <Route path="/" element={<Dashboard />} />
-        <Route path="/upload" element={<Upload />} />
+        <Route path="/analytics" element={<Analytics />} />
         <Route path="/anomalies" element={<Anomalies />} />
         <Route path="/map" element={<MapView />} />
       </Route>

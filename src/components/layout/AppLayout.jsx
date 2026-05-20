@@ -42,7 +42,7 @@ export default function AppLayout() {
 
   const navItems = [
     perms.canViewDashboard && { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-    perms.canUpload && { path: '/upload', label: 'Upload', icon: Upload },
+    perms.canUpload && { path: '/analytics', label: 'Analytics', icon: Upload },
     perms.canViewAnomalyList && { path: '/anomalies', label: 'Anomalies', icon: AlertTriangle },
     perms.canViewMap && { path: '/map', label: 'Map', icon: Map },
   ].filter(Boolean);
