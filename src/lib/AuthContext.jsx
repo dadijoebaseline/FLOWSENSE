@@ -9,6 +9,22 @@ const ADMIN_EMAIL = normalizeEmail(import.meta.env.VITE_ADMIN_EMAIL || '');
 
 const getRoleFromEmail = (email) => (normalizeEmail(email) === ADMIN_EMAIL ? 'admin' : 'viewer');
 
+const fetchUserSession = async (idToken) => {
+  const response = await fetch('/api/auth/session', {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${idToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    return { success: false, ...data };
+  }
+
+  return { success: true, ...(await response.json()) };
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -22,28 +38,54 @@ export const AuthProvider = ({ children }) => {
   });
 
   useEffect(() => {
-    setIsLoadingAuth(true);
-    const unsubscribe = onAuthStateChanged(
-      auth,
-      (firebaseUser) => {
-        if (firebaseUser) {
-          const email = firebaseUser.email || '';
-          setUser({
-            id: firebaseUser.uid,
-            name: firebaseUser.displayName || 'User',
-            email,
-            role: getRoleFromEmail(email),
-          });
+    let disposed = false;
+
+    const syncSession = async (firebaseUser) => {
+      if (!firebaseUser) return;
+
+      try {
+        const token = await firebaseUser.getIdToken(true);
+        const session = await fetchUserSession(token);
+
+        if (disposed) return;
+
+        if (session.success && session.user) {
+          setUser(session.user);
           setIsAuthenticated(true);
           setAuthError(null);
         } else {
           setUser(null);
           setIsAuthenticated(false);
+          setAuthError({ type: session.error || 'auth_required', message: session.message || 'Authentication failed.' });
+          await signOut(auth);
         }
+      } catch (error) {
+        if (disposed) return;
+        setUser(null);
+        setIsAuthenticated(false);
+        setAuthError({ type: 'server_error', message: error.message || 'Unable to verify authentication.' });
+      } finally {
+        if (disposed) return;
         setIsLoadingAuth(false);
         setAuthChecked(true);
+      }
+    };
+
+    setIsLoadingAuth(true);
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      (firebaseUser) => {
+        if (firebaseUser) {
+          syncSession(firebaseUser);
+        } else {
+          setUser(null);
+          setIsAuthenticated(false);
+          setIsLoadingAuth(false);
+          setAuthChecked(true);
+        }
       },
       (error) => {
+        if (disposed) return;
         setUser(null);
         setIsAuthenticated(false);
         setAuthError({ type: 'server_error', message: error.message || 'Unable to verify authentication.' });
@@ -52,22 +94,36 @@ export const AuthProvider = ({ children }) => {
       }
     );
 
-    return unsubscribe;
+    return () => {
+      disposed = true;
+      unsubscribe();
+    };
   }, []);
+
+  const getIdToken = async () => {
+    if (!auth.currentUser) return null;
+    return auth.currentUser.getIdToken(true);
+  };
 
   const login = async () => {
     setAuthError(null);
     try {
       const response = await signInWithPopup(auth, googleProvider);
       const firebaseUser = response.user;
-      const email = firebaseUser.email || '';
-      setUser({
-        id: firebaseUser.uid,
-        name: firebaseUser.displayName || 'User',
-        email,
-        role: getRoleFromEmail(email),
-      });
+      const token = await firebaseUser.getIdToken(true);
+      const session = await fetchUserSession(token);
+
+      if (!session.success) {
+        await signOut(auth);
+        setUser(null);
+        setIsAuthenticated(false);
+        setAuthError({ type: session.error || 'auth_required', message: session.message || 'Authentication failed.' });
+        return { success: false, error: session.error || 'auth_required', message: session.message || 'Authentication failed.' };
+      }
+
+      setUser(session.user);
       setIsAuthenticated(true);
+      setAuthError(null);
       return { success: true };
     } catch (error) {
       const message = error?.message || 'Google sign-in failed.';
@@ -116,6 +172,7 @@ export const AuthProvider = ({ children }) => {
         checkAppState,
         login,
         signup,
+        getIdToken,
       }}
     >
       {children}

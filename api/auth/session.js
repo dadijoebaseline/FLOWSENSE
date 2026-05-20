@@ -1,6 +1,5 @@
-import { parseCookies } from '../lib/requestUtils.js';
-import { getSession } from '../lib/sessionStore.js';
-import { findUserById } from '../lib/userStore.js';
+import { verifyFirebaseIdToken, isAdminEmail } from '../lib/firebaseAuth.js';
+import { findUserByEmail, createOrUpdateUser } from '../lib/userStore.js';
 
 const sendJson = (res, status, body) => {
   res.statusCode = status;
@@ -13,21 +12,40 @@ export default async function handler(req, res) {
     return sendJson(res, 405, { error: 'Method not allowed' });
   }
 
-  const cookies = parseCookies(req);
-  const sessionId = cookies.flowsense_session;
-  if (!sessionId) {
-    return sendJson(res, 401, { authenticated: false });
+  const authorization = req.headers.authorization || '';
+  const token = authorization.startsWith('Bearer ') ? authorization.slice(7) : null;
+  if (!token) {
+    return sendJson(res, 401, { authenticated: false, error: 'auth_required' });
   }
 
-  const session = await getSession(sessionId);
-  if (!session) {
-    return sendJson(res, 401, { authenticated: false });
-  }
+  try {
+    const payload = await verifyFirebaseIdToken(token);
+    const email = payload.email || '';
+    if (!email) {
+      return sendJson(res, 401, { authenticated: false, error: 'invalid_token' });
+    }
 
-  const user = await findUserById(session.userId);
-  if (!user || user.status !== 'approved') {
-    return sendJson(res, 401, { authenticated: false });
-  }
+    const existingUser = await findUserByEmail(email);
+    const role = existingUser?.role || (isAdminEmail(email) ? 'admin' : 'viewer');
+    const banned = existingUser?.banned || false;
 
-  return sendJson(res, 200, { authenticated: true, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
+    const user = await createOrUpdateUser({
+      id: payload.user_id,
+      name: payload.name || 'User',
+      email,
+      role,
+      banned,
+    });
+
+    if (user.banned) {
+      return sendJson(res, 403, { authenticated: false, error: 'banned' });
+    }
+
+    return sendJson(res, 200, {
+      authenticated: true,
+      user: { id: user.id, name: user.name, email: user.email, role: user.role, banned: user.banned },
+    });
+  } catch (error) {
+    return sendJson(res, 401, { authenticated: false, error: 'invalid_token', message: error.message });
+  }
 }
