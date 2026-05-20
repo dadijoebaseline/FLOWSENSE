@@ -5,7 +5,7 @@
 See: .gsd/PROJECT.md (updated 2026-05-14)
 
 **Core value:** Deliver a fully static, Vercel-friendly anomaly detection experience using only client-side data and pre-loaded GeoJSON files.
-**Current focus:** Static deployment readiness and anomaly logic refinement
+**Current focus:** Static deployment readiness, anomaly logic refinement, and clarifying the Analytics placeholder state
 
 ## Current Position
 
@@ -45,6 +45,7 @@ Progress: [█████_____ ] 33%
 - Add explicit month selection UI
 - Improve dataset discovery and metadata display
 - Document GitHub/Vercel deployment flow
+- Clarify whether Analytics should become a real upload/data ingestion experience
 
 ### Blockers/Concerns
 

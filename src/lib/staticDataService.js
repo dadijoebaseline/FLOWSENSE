@@ -65,7 +65,7 @@ async function loadAllAccounts() {
   return _allAccountsPromise;
 }
 
-/** Force a fresh reload of all account data (e.g. after new files uploaded) */
+/** Force a fresh reload of all account data (e.g. after dataset files are updated) */
 export function invalidateAccountsCache() {
   _allAccountsPromise = null;
 }

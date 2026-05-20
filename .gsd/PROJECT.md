@@ -22,6 +22,7 @@ Deliver a fully static, Vercel-friendly anomaly detection experience using only 
 - [ ] Ensure the UI clearly reflects month selection and data source
 - [ ] Document static deployment workflow for GitHub + Vercel
 - [ ] Refine anomaly detection thresholds and active-status filtering for sudden up/down flags
+- [ ] Decide whether the Analytics route should remain a placeholder or evolve into a real dataset ingestion experience
 
 ### Out of Scope
 
@@ -34,6 +35,8 @@ Deliver a fully static, Vercel-friendly anomaly detection experience using only 
 This project was originally built on Base44 with a cloud database backend. It has been converted into a static React + Vite application that uses local GeoJSON APIs via `fetch('/data/<month>.geojson')`. The focus is on making the app deployable on static hosts like Vercel.
 
 Recent refinement work has adjusted anomaly detection so `sudden_high` and `sudden_down` now require both a relative threshold and a meaningful absolute `cumUsed` shift, and `sudden_down` is only reported for active accounts.
+
+Note: the former Upload route has been replaced with an Analytics placeholder page. There is currently no runtime upload or dataset ingestion workflow in the static app.
 
 ## Constraints
 

@@ -4,21 +4,21 @@
 
 export const ROLE_PERMISSIONS = {
   admin: {
-    canUpload: true,
+    canViewAnalytics: true,
     canViewDashboard: true,
     canViewMap: true,
     canViewAnomalyList: true,
     canTriggerDetection: true,
   },
   manager: {
-    canUpload: false,
+    canViewAnalytics: false,
     canViewDashboard: true,
     canViewMap: true,
     canViewAnomalyList: true,
     canTriggerDetection: false,
   },
   viewer: {
-    canUpload: false,
+    canViewAnalytics: false,
     canViewDashboard: false,
     canViewMap: true,
     canViewAnomalyList: true,

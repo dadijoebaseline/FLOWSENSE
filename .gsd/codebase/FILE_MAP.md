@@ -27,7 +27,7 @@ src/lib/
 
 src/pages/
 - `src/pages/Dashboard.jsx` — main dashboard, uses React Query. (critical)
-- `src/pages/Upload.jsx` — upload UI (static app variant may be limited).
+- `src/pages/Analytics.jsx` — Analytics placeholder page with no actual upload flow implemented.
 - `src/pages/Anomalies.jsx` — anomaly list page.
 - `src/pages/MapView.jsx` — full map view.
 

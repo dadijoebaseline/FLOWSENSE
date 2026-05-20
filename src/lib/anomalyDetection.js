@@ -174,7 +174,7 @@ export function parseGeoJSON(geojsonData, datasetLabel = '') {
  * Detect anomalies from a new dataset by comparing against historical records
  * for the same accounts from previous datasets.
  * 
- * @param {Array} currentAccounts - Accounts parsed from the current upload
+ * @param {Array} currentAccounts - Accounts parsed from the current dataset
  * @param {Array} historicalAccounts - All previously stored WaterAccount records (other datasets)
  */
 export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) {

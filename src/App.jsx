@@ -8,7 +8,7 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 
 import AppLayout from '@/components/layout/AppLayout';
 import Dashboard from '@/pages/Dashboard';
-import Analytics from '@/pages/Upload';
+import Analytics from '@/pages/Analytics';
 import Anomalies from '@/pages/Anomalies';
 import MapView from '@/pages/MapView';
 

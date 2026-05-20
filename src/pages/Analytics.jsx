@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Analytics as AnalyticsIcon } from 'lucide-react';
+import { TrendingUp as AnalyticsIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function Analytics() {

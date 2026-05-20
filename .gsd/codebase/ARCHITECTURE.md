@@ -6,7 +6,7 @@ Pattern Overview
 - Single-page client-side React application built and shipped as static assets by Vite. (Entry: `index.html`, `src/main.jsx`)
 
 Layers
-- Presentation (UI): `src/components/` and `src/pages/` — React components and route pages (`src/pages/Dashboard.jsx`, `src/pages/Upload.jsx`, `src/pages/Anomalies.jsx`, `src/pages/MapView.jsx`).
+- Presentation (UI): `src/components/` and `src/pages/` — React components and route pages (`src/pages/Dashboard.jsx`, `src/pages/Analytics.jsx`, `src/pages/Anomalies.jsx`, `src/pages/MapView.jsx`).
 - Client state & queries: `src/lib/query-client.js` and `@tanstack/react-query` usage across pages. (e.g., `Dashboard.jsx` uses queries)
 - Business logic / domain: `src/lib/anomalyDetection.js`, `src/lib/staticDataService.js`, `entities/*.json` (domain schemas).
 - Assets / Data: `public/data/*.geojson` (static datasets). The app fetches these at runtime via relative paths. See `src/lib/staticDataService.js`.

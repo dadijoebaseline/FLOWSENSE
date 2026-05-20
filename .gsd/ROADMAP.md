@@ -37,6 +37,7 @@ Plans:
 1. Users can see available month files clearly
 2. UI documentation explains how to add new months
 3. The dataset listing feels intuitive
+4. The Analytics route is clarified as informational until a data ingestion flow is planned
 
 Plans:
 - [ ] 02-01: Add month selector or dataset filter UI

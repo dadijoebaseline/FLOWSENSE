@@ -5,7 +5,7 @@ import { getUserPermissions } from '@/lib/roleAccess';
 import { staticDataService } from '@/lib/staticDataService';
 import {
   LayoutDashboard,
-  Upload,
+  TrendingUp,
   AlertTriangle,
   Map,
   Menu,
@@ -42,7 +42,7 @@ export default function AppLayout() {
 
   const navItems = [
     perms.canViewDashboard && { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-    perms.canUpload && { path: '/analytics', label: 'Analytics', icon: Upload },
+    perms.canViewAnalytics && { path: '/analytics', label: 'Analytics', icon: TrendingUp },
     perms.canViewAnomalyList && { path: '/anomalies', label: 'Anomalies', icon: AlertTriangle },
     perms.canViewMap && { path: '/map', label: 'Map', icon: Map },
   ].filter(Boolean);
