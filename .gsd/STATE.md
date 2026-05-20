@@ -5,14 +5,14 @@
 See: .gsd/PROJECT.md (updated 2026-05-14)
 
 **Core value:** Deliver a fully static, Vercel-friendly anomaly detection experience using only client-side data and pre-loaded GeoJSON files.
-**Current focus:** Static deployment readiness
+**Current focus:** Static deployment readiness and anomaly logic refinement
 
 ## Current Position
 
 Phase: 1 of 3 (Static Conversion)
 Plan: 1 of 1 in current phase
 Status: Phase complete
-Last activity: 2026-05-14 — Converted FlowSense to static file mode and updated `.gsd` metadata
+Last activity: 2026-05-20 — Fixed anomaly detection thresholds and account detail rendering; updated `.gsd` metadata
 
 Progress: [█████_____ ] 33%
 

@@ -41,6 +41,7 @@ Plans:
 Plans:
 - [ ] 02-01: Add month selector or dataset filter UI
 - [ ] 02-02: Add dataset metadata and file instructions
+- [ ] 02-03: Refine anomaly detection behavior for low-volume accounts and active-status filtering
 
 ### Phase 3: Deployment & Documentation
 
@@ -61,5 +62,5 @@ Plans:
 | Phase | Plans Complete | Status |
 |-------|----------------|--------|
 | Phase 1: Static Conversion | 3/3 | Complete |
-| Phase 2: Static Data Experience | 0/2 | Not started |
+| Phase 2: Static Data Experience | 0/3 | Not started |
 | Phase 3: Deployment & Documentation | 0/2 | Not started |
