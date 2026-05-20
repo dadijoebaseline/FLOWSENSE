@@ -1,78 +1,84 @@
-import { kv } from '@vercel/kv';
-import { v4 as uuidv4 } from 'uuid';
+import { firestore } from './firebaseAdmin.js';
 
-const USERS_KEY = 'flowsense_users';
+const USERS_COLLECTION = 'flowsense_users';
 const normalizeEmail = (email) => String(email || '').trim().toLowerCase();
 
+const snapshotToUser = (doc) => {
+  const data = doc.data() || {};
+  return {
+    id: doc.id,
+    name: data.name || 'User',
+    email: data.email || '',
+    role: data.role || 'viewer',
+    banned: data.banned || false,
+    createdAt: data.createdAt || null,
+    updatedAt: data.updatedAt || null,
+  };
+};
+
 export async function getUsers() {
-  const stored = await kv.get(USERS_KEY);
-  return Array.isArray(stored) ? stored : [];
+  const snapshot = await firestore.collection(USERS_COLLECTION).get();
+  return snapshot.docs.map(snapshotToUser);
+}
+
+export async function getAllUsers() {
+  return getUsers();
 }
 
 export async function findUserByEmail(email) {
   const normalized = normalizeEmail(email);
-  const users = await getUsers();
-  return users.find((item) => normalizeEmail(item.email) === normalized) || null;
+  const snapshot = await firestore.collection(USERS_COLLECTION)
+    .where('email', '==', normalized)
+    .limit(1)
+    .get();
+  return snapshot.empty ? null : snapshotToUser(snapshot.docs[0]);
 }
 
 export async function findUserById(id) {
-  const users = await getUsers();
-  return users.find((item) => item.id === id) || null;
+  if (!id) return null;
+  const doc = await firestore.collection(USERS_COLLECTION).doc(id).get();
+  return doc.exists ? snapshotToUser(doc) : null;
 }
 
 export async function createOrUpdateUser({ id, name, email, role = 'viewer', banned = false }) {
   const normalizedEmail = normalizeEmail(email);
-  const users = await getUsers();
-  const existingById = users.find((item) => item.id === id);
-  const existingByEmail = users.find((item) => normalizeEmail(item.email) === normalizedEmail);
-
-  const userRecord = {
-    id: id || `user-${uuidv4()}`,
+  const userId = id || normalizedEmail;
+  const userRef = firestore.collection(USERS_COLLECTION).doc(userId);
+  const now = new Date().toISOString();
+  const userData = {
     name: String(name || 'User').trim() || 'User',
     email: normalizedEmail,
     role,
     banned,
-    createdAt: new Date().toISOString(),
+    updatedAt: now,
   };
 
-  let nextUsers = users;
-  if (existingById) {
-    nextUsers = users.map((item) =>
-      item.id === id ? { ...item, name: userRecord.name, email: userRecord.email, role: userRecord.role, banned: userRecord.banned } : item
-    );
-  } else if (existingByEmail) {
-    nextUsers = users.map((item) =>
-      normalizeEmail(item.email) === normalizedEmail ? { ...item, id: userRecord.id, name: userRecord.name, role: userRecord.role, banned: userRecord.banned } : item
-    );
+  const existing = await userRef.get();
+  if (!existing.exists) {
+    userData.createdAt = now;
   } else {
-    nextUsers = [...users, userRecord];
+    const existingData = existing.data() || {};
+    userData.createdAt = existingData.createdAt || now;
   }
 
-  await kv.set(USERS_KEY, nextUsers);
-  return nextUsers.find((item) => item.id === userRecord.id) || userRecord;
-}
-
-export async function getAllUsers() {
-  return await getUsers();
+  await userRef.set(userData, { merge: true });
+  return findUserById(userId);
 }
 
 export async function updateUserRoleById(userId, role) {
-  const users = await getUsers();
-  const nextUsers = users.map((item) => (item.id === userId ? { ...item, role } : item));
-  await kv.set(USERS_KEY, nextUsers);
-  return nextUsers.find((item) => item.id === userId) || null;
+  const userRef = firestore.collection(USERS_COLLECTION).doc(userId);
+  await userRef.update({ role, updatedAt: new Date().toISOString() });
+  return findUserById(userId);
 }
 
 export async function banUserById(userId, banned) {
-  const users = await getUsers();
-  const nextUsers = users.map((item) => (item.id === userId ? { ...item, banned } : item));
-  await kv.set(USERS_KEY, nextUsers);
-  return nextUsers.find((item) => item.id === userId) || null;
+  const userRef = firestore.collection(USERS_COLLECTION).doc(userId);
+  await userRef.update({ banned, updatedAt: new Date().toISOString() });
+  return findUserById(userId);
 }
 
 export async function deleteUserById(userId) {
-  const users = await getUsers();
-  const nextUsers = users.filter((item) => item.id !== userId);
-  await kv.set(USERS_KEY, nextUsers);
-  return nextUsers;
+  const userRef = firestore.collection(USERS_COLLECTION).doc(userId);
+  await userRef.delete();
+  return { id: userId };
 }

@@ -30,7 +30,7 @@ export default async function handler(req, res) {
     const banned = existingUser?.banned || false;
 
     const user = await createOrUpdateUser({
-      id: payload.user_id,
+      id: payload.uid || payload.sub,
       name: payload.name || 'User',
       email,
       role,

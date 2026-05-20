@@ -1,23 +1,40 @@
-import { kv } from '@vercel/kv';
+import { firestore } from './firebaseAdmin.js';
 import { v4 as uuidv4 } from 'uuid';
 
-const SESSION_PREFIX = 'flowsense_session:';
-const SESSION_TTL = 60 * 60 * 24 * 7; // 7 days
+const SESSION_COLLECTION = 'flowsense_sessions';
+const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 export async function createSession(userId) {
   const sessionId = `sess-${uuidv4()}`;
-  const session = { userId, createdAt: new Date().toISOString() };
-  await kv.set(`${SESSION_PREFIX}${sessionId}`, session, { ex: SESSION_TTL });
+  const now = Date.now();
+  const session = { userId, createdAt: now };
+  await firestore.collection(SESSION_COLLECTION).doc(sessionId).set({
+    ...session,
+    updatedAt: now,
+  });
   return { sessionId, session };
 }
 
 export async function getSession(sessionId) {
   if (!sessionId) return null;
-  return await kv.get(`${SESSION_PREFIX}${sessionId}`);
+
+  const doc = await firestore.collection(SESSION_COLLECTION).doc(sessionId).get();
+  if (!doc.exists) return null;
+
+  const data = doc.data();
+  if (!data) return null;
+
+  const age = Date.now() - data.createdAt;
+  if (age > SESSION_TTL_MS) {
+    await deleteSession(sessionId);
+    return null;
+  }
+
+  return { userId: data.userId, createdAt: new Date(data.createdAt).toISOString() };
 }
 
 export async function deleteSession(sessionId) {
   if (!sessionId) return false;
-  await kv.del(`${SESSION_PREFIX}${sessionId}`);
+  await firestore.collection(SESSION_COLLECTION).doc(sessionId).delete();
   return true;
 }
