@@ -51,7 +51,11 @@ export default function Login() {
 
     const result = await signup({ name, email });
     if (result.success) {
-      setMessage('Signup request submitted. Admin approval is required before access is granted.');
+      if (result.adminApproved) {
+        setMessage('You are the first signup and have been approved as admin automatically. Please sign in with your email.');
+      } else {
+        setMessage('Signup request submitted. Admin approval is required before access is granted.');
+      }
       return;
     }
 
@@ -71,7 +75,7 @@ export default function Login() {
           <p className="text-sm uppercase tracking-[0.3em] text-sky-300">FlowSense access</p>
           <h1 className="mt-4 text-3xl font-semibold text-white">Email sign-in and approval</h1>
           <p className="mt-3 text-sm text-slate-400">
-            Sign in with your email or request access. An administrator can approve new accounts.
+            Sign in with your email or request access. The first signup will become the admin automatically.
           </p>
         </div>
 
