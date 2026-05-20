@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { ChartContainer } from '@/components/ui/chart';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { ANOMALY_LABELS } from '@/lib/anomalyDetection';
 import { staticDataService } from '@/lib/staticDataService';
 import StatsCard from '@/components/dashboard/StatsCard';
@@ -17,6 +19,8 @@ export default function Dashboard() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedAnomaly, setSelectedAnomaly] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   useEffect(() => {
     function onOpen(e) {
@@ -28,6 +32,42 @@ export default function Dashboard() {
     window.addEventListener('anomaly:open', onOpen);
     return () => window.removeEventListener('anomaly:open', onOpen);
   }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    if (!dialogOpen || !selectedAnomaly) {
+      setHistory([]);
+      return () => { mounted = false; };
+    }
+
+    const accountKey = selectedAnomaly.accountId || selectedAnomaly.accountNumber;
+    if (!accountKey) {
+      setHistory([]);
+      return () => { mounted = false; };
+    }
+
+    (async () => {
+      setHistoryLoading(true);
+      try {
+        const trend = await staticDataService.getAccountHistory(accountKey, 3);
+        if (mounted) {
+          setHistory(trend || []);
+        }
+      } catch (error) {
+        if (mounted) {
+          setHistory([]);
+        }
+      } finally {
+        if (mounted) {
+          setHistoryLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, [dialogOpen, selectedAnomaly]);
 
   const { data: anomalies = [], isLoading } = useQuery({
     queryKey: ['anomalies'],
@@ -158,6 +198,31 @@ export default function Dashboard() {
                   </div>
                 </DialogDescription>
               </DialogHeader>
+
+              <div className="mt-4">
+                <div className="font-semibold text-xs text-slate-400 mb-2">3-Month Consumption Trend</div>
+                {historyLoading ? (
+                  <div className="text-xs text-slate-500">Loading history...</div>
+                ) : history && history.length > 0 ? (
+                  <ChartContainer style={{ height: 180 }} config={{}}>
+                    <AreaChart data={history} margin={{ left: 10, right: 10, top: 6, bottom: 6 }}>
+                      <defs>
+                        <linearGradient id="trendGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#38bdf8" stopOpacity={0.7} />
+                          <stop offset="100%" stopColor="#38bdf8" stopOpacity={0.1} />
+                        </linearGradient>
+                      </defs>
+                      <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={32} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.16)" vertical={false} />
+                      <Tooltip contentStyle={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 8, fontSize: 12, color: '#e2e8f0' }} />
+                      <Area type="monotone" dataKey="consumption" stroke="#38bdf8" fill="url(#trendGradient)" strokeWidth={2} dot={{ r: 3 }} />
+                    </AreaChart>
+                  </ChartContainer>
+                ) : (
+                  <div className="text-xs text-slate-500">No consumption history available.</div>
+                )}
+              </div>
             </>
           )}
         </DialogContent>
