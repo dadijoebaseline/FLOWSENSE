@@ -93,18 +93,35 @@ export function parseGeoJSON(geojsonData, datasetLabel = '') {
     const rawId = props.accountNumber ?? props.accountnumber ?? props.AccountNumber ?? props.account_id ?? props.ogcFid ?? props.ogc_fid ?? props.meterNo ?? props.meterno ?? props.MeterNo ?? '';
     const accountId = rawId ? String(rawId).trim().replace(/\s+/g, '').replace(/[^A-Za-z0-9_-]/g, '').toUpperCase() : null;
 
-    // Always use cumUsed as the monthly usage for this month
+    // Always use cumUsed as the monthly usage for this month if available;
+    // otherwise derive it from valid prs/prv readings.
     let cumUsedRaw = props.cumUsed ?? props.cumused ?? props.CumUsed ?? props.cum_used ?? props.Cum_Used;
     let status = (props.status ?? props.Status ?? '').toString().toUpperCase();
-    // Preserve original raw value (if present) for precise zero-detection.
-    const rawCumUsed = Number.isFinite(Number(cumUsedRaw)) ? Number(cumUsedRaw) : null;
-    let cumUsed = Number(cumUsedRaw);
-    if (cumUsedRaw === null || cumUsedRaw === undefined || isNaN(cumUsed) || ["DISCONNECTED", "NEW", "RENEWED"].includes(status)) {
+    const prvReadingRaw = props.prvReading ?? props.prvreading ?? props.PRVReading ?? props.prv_reading;
+    const prsReadingRaw = props.prsReading ?? props.prsreading ?? props.PRSReading ?? props.prs_reading;
+    const prvReading = Number(prvReadingRaw);
+    const prsReading = Number(prsReadingRaw);
+    let rawCumUsed = Number.isFinite(Number(cumUsedRaw)) ? Number(cumUsedRaw) : null;
+
+    const hasReadingFromPrsPrv = Number.isFinite(prsReading) && Number.isFinite(prvReading);
+    if (rawCumUsed === null && hasReadingFromPrsPrv) {
+      rawCumUsed = prsReading - prvReading;
+    }
+
+    const hasCurrentReading = rawCumUsed !== null;
+    if (!hasCurrentReading) {
+      // Skip current month rows that are not yet read or have incomplete reading data.
+      continue;
+    }
+
+    let cumUsed = Number(rawCumUsed);
+    if (rawCumUsed === null || isNaN(cumUsed) || ["DISCONNECTED", "NEW", "RENEWED"].includes(status)) {
       cumUsed = 0;
     }
+
     // Optionally, keep readings for reference
-    const prvReading = Number(props.prvReading ?? props.prvreading ?? props.PRVReading ?? props.prv_reading) || 0;
-    const prsReading = Number(props.prsReading ?? props.prsreading ?? props.PRSReading ?? props.prs_reading) || 0;
+    const prvReadingValue = Number(prvReadingRaw) || 0;
+    const prsReadingValue = Number(prsReadingRaw) || 0;
 
     const warnings = [];
 
@@ -136,8 +153,8 @@ export function parseGeoJSON(geojsonData, datasetLabel = '') {
       bookNo: props.bookNo ?? props.bookno ?? props.BookNo ?? '',
       rateCode: props.rateCode ?? props.ratecode ?? props.RateCode ?? '',
       status: props.status ?? props.Status ?? '',
-      prvReading,
-      prsReading,
+      prvReading: prvReadingValue,
+      prsReading: prsReadingValue,
       cumUsed, rawCumUsed, // Canonical field for monthly usage (rawCumUsed preserves original provided reading, or null)
       billAmount: Number(props.billAmount ?? props.BillAmount) || 0,
       year: props.year ?? props.Year ?? null,
@@ -222,21 +239,10 @@ export function detectAnomaliesWithHistory(currentAccounts, historicalAccounts) 
 
     let currentConsumption;
     if (!hasReading) {
-      if (status === 'disconnected') {
-        skipped_zero_current++;
-        continue;
-      }
-      const isKnownStatus = status === '' || status === 'active' || status === 'new' || status === 'ni-renew';
-      if (isKnownStatus) {
-        // Not yet read: estimate using historical average
-        currentConsumption = avgPrev;
-      } else {
-        skipped_zero_current++;
-        continue;
-      }
-    } else {
-      currentConsumption = rawReading;
+      skipped_zero_current++;
+      continue;
     }
+    currentConsumption = rawReading;
 
     // Only treat as zero_consumption anomaly when the provided reading was explicitly zero and account status is ACTIVE
     if (hasReading && Number(rawReading) === 0 && avgPrev > 0 && status === 'active') {
