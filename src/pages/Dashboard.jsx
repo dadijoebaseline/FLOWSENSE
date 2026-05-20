@@ -15,7 +15,8 @@ import { AlertTriangle, ArrowUpRight, ArrowDownRight, Droplets, Zap } from 'luci
 import { motion } from 'framer-motion';
 
 export default function Dashboard() {
-  const { role } = useOutletContext();
+  const outletContext = useOutletContext();
+  const role = outletContext?.role || 'viewer';
   const navigate = useNavigate();
 
   const [dialogOpen, setDialogOpen] = useState(false);
