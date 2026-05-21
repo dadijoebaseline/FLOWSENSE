@@ -5,16 +5,16 @@
 See: .gsd/PROJECT.md (updated 2026-05-14)
 
 **Core value:** Deliver a fully static, Vercel-friendly anomaly detection experience using only client-side data and pre-loaded GeoJSON files.
-**Current focus:** Static deployment readiness, anomaly logic refinement, and clarifying the Analytics placeholder state
+**Current focus:** Static deployment readiness, anomaly logic refinement, map search UX improvements, and clarifying the Analytics placeholder state
 
 ## Current Position
 
 Phase: 1 of 3 (Static Conversion)
 Plan: 1 of 1 in current phase
 Status: Phase complete
-Last activity: 2026-05-20 — Fixed anomaly detection thresholds and account detail rendering; updated `.gsd` metadata
+Last activity: 2026-05-21 — Added anomaly export, improved dashboard map mobile visibility, default cluster markers, map search suggestion overlay and click-to-zoom support, React key warning fixes, and updated `.gsd` documentation
 
-Progress: [█████_____ ] 33%
+Progress: [███████___ ] 50%
 
 ## Performance Metrics
 
@@ -30,7 +30,7 @@ Progress: [█████_____ ] 33%
 | ----- | ----- | --------- | ------ |
 | Phase 1 | 3 | 3 | Complete |
 | Phase 2 | 2 | 0 | Not started |
-| Phase 3 | 2 | 0 | Not started |
+| Phase 3 | 2 | 1 | In progress |
 
 ## Accumulated Context
 

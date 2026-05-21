@@ -15,6 +15,11 @@ Deliver a fully static, Vercel-friendly anomaly detection experience using only 
 - ✓ Static dataset ingestion from `public/data/*.geojson` — current implementation
 - ✓ Anomaly detection and visualization in dashboard, map, and anomaly table — current implementation
 - ✓ No backend database dependency, deployable as a static site — current implementation
+- ✓ Anomaly records export to CSV/Excel from the anomaly page — current implementation
+- ✓ Dashboard map defaults to clustered markers with mobile-visible responsive height — current implementation
+- ✓ Map search suggestions overlay above the map and selecting a suggestion zooms to the selected anomaly — current implementation
+- ✓ React duplicate key warnings fixed for search suggestions and anomaly table rows — current implementation
+- ✓ Vercel deployment helper script available at `.bat/deploy-vercel.bat` — current implementation
 
 ### Active
 
@@ -35,6 +40,7 @@ Deliver a fully static, Vercel-friendly anomaly detection experience using only 
 This project was originally built on Base44 with a cloud database backend. It has been converted into a static React + Vite application that uses local GeoJSON APIs via `fetch('/data/<month>.geojson')`. The focus is on making the app deployable on static hosts like Vercel.
 
 Recent refinement work has adjusted anomaly detection so `sudden_high` and `sudden_down` now require both a relative threshold and a meaningful absolute `cumUsed` shift, and `sudden_down` is only reported for active accounts.
+The anomaly list now supports exporting filtered records to CSV for Excel, the dashboard map defaults to clustered markers with a mobile-friendly height setting, and map search suggestions now render above the map with click-to-zoom behavior for selected accounts.
 
 Note: the former Upload route has been replaced with an Analytics placeholder page. There is currently no runtime upload or dataset ingestion workflow in the static app.
 
@@ -55,4 +61,4 @@ Note: the former Upload route has been replaced with an Analytics placeholder pa
 
 ---
 
-_Last updated: 2026-05-20 after static conversion, anomaly detection refinement, and documentation updates_
+_Last updated: 2026-05-21 after static conversion, anomaly export, mobile map refinements, and deploy helper updates._
