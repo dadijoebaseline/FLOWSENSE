@@ -77,6 +77,32 @@ function sortMonths(months) {
   return [...months].sort((a, b) => a.localeCompare(b));
 }
 
+export function filterLatestMonthAnomalies(anomalies, allAccounts) {
+  const months = sortMonths(AVAILABLE_DATASETS.map(d => d.id));
+  const monthIndex = {};
+  months.forEach((month, i) => { monthIndex[month] = i; });
+
+  const latestByAccount = {};
+  for (const acc of allAccounts) {
+    if (!acc.accountId) continue;
+    const idx = monthIndex[acc.datasetId] ?? -1;
+    if (idx === -1) continue;
+    if (!latestByAccount[acc.accountId] || idx > latestByAccount[acc.accountId].index) {
+      latestByAccount[acc.accountId] = { acc, index: idx };
+    }
+  }
+
+  return anomalies.filter(a => {
+    const accountKey = a.accountNumber || a.accountId;
+    const latest = latestByAccount[accountKey];
+    const anomalyIdx = monthIndex[a.datasetId] ?? -1;
+    if (latest && anomalyIdx !== latest.index) {
+      return false;
+    }
+    return true;
+  });
+}
+
 export const staticDataService = {
     /**
      * Returns the last N months of consumption for an account as an array:
@@ -173,33 +199,7 @@ export const staticDataService = {
       }
     }
 
-    const filtered = anomalies.filter(a => {
-      if (a.anomalyType !== 'zero_consumption') return true;
-      const latest = latestByAccount[a.accountNumber];
-      if (!latest) return true;
-      const anomalyIdx = monthIndex[a.datasetId] ?? -1;
-      // If there is a later dataset for this account, and that later dataset shows positive consumption, drop the earlier zero flag
-      if (latest.index > anomalyIdx) {
-        const la = latest.acc;
-        let latestConsumption = null;
-        const hasPrv = la.prvReading !== undefined && la.prvReading !== null && !isNaN(Number(la.prvReading));
-        const hasPrs = la.prsReading !== undefined && la.prsReading !== null && !isNaN(Number(la.prsReading));
-        if (hasPrv && hasPrs) {
-          latestConsumption = Number(la.prsReading) - Number(la.prvReading);
-        } else if (la.rawCumUsed !== undefined && la.rawCumUsed !== null) {
-          latestConsumption = Number(la.rawCumUsed);
-        } else {
-          latestConsumption = Number(la.cumUsed);
-        }
-        if (isNaN(latestConsumption)) latestConsumption = 0;
-        if (latestConsumption > 0) {
-          return false;
-        }
-      }
-      return true;
-    });
-
-    return filtered;
+    return filterLatestMonthAnomalies(anomalies, allAccounts);
   },
 
   /**

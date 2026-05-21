@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { parseGeoJSON, detectAnomaliesWithHistory } from '../anomalyDetection';
+import { filterLatestMonthAnomalies } from '../staticDataService';
 
 describe('parseGeoJSON', () => {
   it('normalizes account IDs and skips missing ids', () => {
@@ -14,6 +15,26 @@ describe('parseGeoJSON', () => {
     expect(accounts.length).toBe(1);
     expect(accounts[0].accountId).toBe('ABC123');
     expect(accounts[0].cumUsed).toBe(5);
+  });
+});
+
+describe('filterLatestMonthAnomalies', () => {
+  it('keeps only the latest month anomaly for an account when later readings exist', () => {
+    const anomalies = [
+      { accountNumber: 'A1', datasetId: '2026-03', anomalyType: 'sudden_down' },
+      { accountNumber: 'A1', datasetId: '2026-05', anomalyType: 'sudden_high' },
+    ];
+    const allAccounts = [
+      { accountId: 'A1', datasetId: '2026-02' },
+      { accountId: 'A1', datasetId: '2026-03' },
+      { accountId: 'A1', datasetId: '2026-05' },
+    ];
+
+    const filtered = filterLatestMonthAnomalies(anomalies, allAccounts);
+
+    expect(filtered).toHaveLength(1);
+    expect(filtered[0].datasetId).toBe('2026-05');
+    expect(filtered[0].anomalyType).toBe('sudden_high');
   });
 });
 

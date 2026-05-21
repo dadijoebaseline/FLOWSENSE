@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 // Marker clustering
@@ -28,10 +28,22 @@ const popupStyle = `
   .leaflet-container { background: #0d1117; }
 `;
 
-export default function AnomalyMap({ anomalies, height = '500px' }) {
+export default function AnomalyMap({ anomalies, height = '500px', highlightKey }) {
+  const uniqueAnomalies = useMemo(() => {
+    const seen = new Set();
+    return anomalies.filter(anomaly => {
+      if (!anomaly.latitude || !anomaly.longitude) return false;
+      const key = anomaly.accountNumber || anomaly.accountId || anomaly.meterNo || anomaly.name || '';
+      if (!key) return false;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [anomalies]);
+
   const validAnomalies = useMemo(
-    () => anomalies.filter(a => a.latitude && a.longitude && a.latitude !== 0 && a.longitude !== 0),
-    [anomalies]
+    () => uniqueAnomalies.filter(a => a.latitude && a.longitude && a.latitude !== 0 && a.longitude !== 0),
+    [uniqueAnomalies]
   );
 
   const center = useMemo(() => {
@@ -45,7 +57,7 @@ export default function AnomalyMap({ anomalies, height = '500px' }) {
   const useClassHeight = typeof height === 'string' && height.includes('h-');
   const containerClassName = `rounded-2xl overflow-hidden w-full ${useClassHeight ? height : ''}`.trim();
   const containerStyle = useClassHeight ? containerStyleBase : { ...containerStyleBase, height };
-  const [renderMode, setRenderMode] = useState('auto'); // 'auto' | 'cluster' | 'canvas'
+  const [renderMode, setRenderMode] = useState('cluster'); // 'auto' | 'cluster' | 'canvas'
   const useCanvas = renderMode === 'canvas' || (renderMode === 'auto' && validAnomalies.length > DEFAULT_CANVAS_THRESHOLD);
 
   return (
@@ -66,6 +78,7 @@ export default function AnomalyMap({ anomalies, height = '500px' }) {
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>'
             url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
           />
+          <MapSearchFocus anomalies={validAnomalies} highlightKey={highlightKey} />
 
           {/* Marker rendering: user-selectable: auto/cluster/canvas */}
                     {useCanvas ? (
@@ -142,14 +155,14 @@ function MarkersClusterLayer({ anomalies }) {
       popupContent.style.fontFamily = 'Inter, sans-serif';
       popupContent.innerHTML = `
         <div style="padding:0 14px 12px 16px;">
-          <p style="font-weight:700;font-size:13px;color:#f1f5f9;margin-bottom:6px;">${anomaly.name || anomaly.accountNumber || anomaly.accountId || '\u2014'}</p>
+          <div style="font-weight:700;font-size:13px;color:#f1f5f9;margin-bottom:6px;">${anomaly.name || anomaly.accountNumber || anomaly.accountId || '\u2014'}</div>
           <div style="font-size:11px;color:#94a3b8;margin-bottom:6px;line-height:1.3;">
             <div style="margin-bottom:4px;">Acct: ${anomaly.accountNumber || anomaly.accountId || '\u2014'}</div>
             <div style="margin-bottom:4px;">Name: ${anomaly.name || anomaly.accountName || '\u2014'}</div>
             <div style="margin-bottom:4px;">Meter: ${anomaly.meterNo || '\u2014'}</div>
             <div>Status: ${statusBadgeHtml}</div>
           </div>
-          ${anomaly.address ? `<p style="font-size:11px;color:#64748b;margin-bottom:10px;">${anomaly.address}</p>` : ''}
+          ${anomaly.address ? `<div style="font-size:11px;color:#64748b;margin-bottom:10px;">${anomaly.address}</div>` : ''}
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
             <div style="flex:1;min-width:120px;">
               <div style="font-size:11px;color:#94a3b8;">Type</div>
@@ -184,6 +197,40 @@ function MarkersClusterLayer({ anomalies }) {
       try { leafletMap.removeLayer(clusterGroup); } catch (e) {}
     };
   }, [anomalies, map]);
+
+  return null;
+}
+
+function MapSearchFocus({ anomalies, highlightKey }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!highlightKey || !anomalies || anomalies.length === 0) return;
+
+    const selected = anomalies.find(anomaly => {
+      const key = anomaly.accountNumber || anomaly.accountId || anomaly.id || anomaly.meterNo || anomaly.name;
+      return key === highlightKey;
+    });
+    if (!selected || !selected.latitude || !selected.longitude) return;
+
+    const latlng = [selected.latitude, selected.longitude];
+    const content = `
+      <div style="font-family:Inter, sans-serif; color:#e2e8f0;">
+        <div style="font-weight:700;font-size:13px;margin-bottom:6px;">${selected.name || selected.accountNumber || selected.accountId || '\u2014'}</div>
+        <div style="font-size:11px;color:#94a3b8;line-height:1.5;">
+          <div>Acct: ${selected.accountNumber || selected.accountId || '\u2014'}</div>
+          <div>${selected.address || ''}</div>
+          <div>Severity: ${selected.severity || 'unknown'}</div>
+        </div>
+      </div>
+    `;
+
+    map.flyTo(latlng, 14, { duration: 0.7 });
+    const popup = L.popup({ maxWidth: 320, closeButton: true, autoClose: true, className: 'anomaly-highlight-popup' })
+      .setLatLng(latlng)
+      .setContent(content);
+    map.openPopup(popup);
+  }, [anomalies, highlightKey, map]);
 
   return null;
 }
@@ -268,14 +315,14 @@ function CanvasMarkersLayer({ anomalies }) {
         const html = `
           <div style="font-family:Inter, sans-serif;">
             <div style="padding:0 14px 12px 16px;">
-              <p style="font-weight:700;font-size:13px;color:#f1f5f9;margin-bottom:6px;">${nearest.name || nearest.accountNumber || nearest.accountId || '\u2014'}</p>
+              <div style="font-weight:700;font-size:13px;color:#f1f5f9;margin-bottom:6px;">${nearest.name || nearest.accountNumber || nearest.accountId || '\u2014'}</div>
               <div style="font-size:11px;color:#94a3b8;margin-bottom:6px;line-height:1.3;">
                 <div style="margin-bottom:4px;">Acct: ${nearest.accountNumber || nearest.accountId || '\u2014'}</div>
                 <div style="margin-bottom:4px;">Name: ${nearest.name || nearest.accountName || '\u2014'}</div>
                 <div style="margin-bottom:4px;">Meter: ${nearest.meterNo || '\u2014'}</div>
                 <div>Status: ${statusBadgeHtml}</div>
               </div>
-              ${nearest.address ? `<p style="font-size:11px;color:#64748b;margin-bottom:10px;">${nearest.address}</p>` : ''}
+              ${nearest.address ? `<div style="font-size:11px;color:#64748b;margin-bottom:10px;">${nearest.address}</div>` : ''}
               <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
                 <div style="flex:1;min-width:120px;">
                   <div style="font-size:11px;color:#94a3b8;">Type</div>
