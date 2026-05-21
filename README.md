@@ -44,6 +44,36 @@ npm run build
 
 The built files will be in the `dist/` folder, ready for deployment to Vercel, Netlify, or any static hosting service.
 
+## Secure Local Configuration
+
+This project stores secrets in local environment files and runtime environment variables, not in source control.
+
+- Copy `.env.example` to `.env.local`
+- Do not commit `.env.local` or local credential files
+- Keep `firebase_auth/` and other service account assets out of git
+
+Required local env vars:
+
+```env
+VITE_FIREBASE_API_KEY=
+VITE_FIREBASE_AUTH_DOMAIN=
+VITE_FIREBASE_PROJECT_ID=
+FIREBASE_PROJECT_ID=
+VITE_FIREBASE_STORAGE_BUCKET=
+VITE_FIREBASE_MESSAGING_SENDER_ID=
+VITE_FIREBASE_APP_ID=
+VITE_ADMIN_EMAIL=
+ADMIN_UID=
+FIREBASE_SERVICE_ACCOUNT_KEY=
+DB_HOST=
+DB_PORT=
+DB_NAME=
+DB_USER=
+DB_PASSWORD=
+```
+
+If you need Firebase Admin access locally, set `FIREBASE_SERVICE_ACCOUNT_KEY` to the JSON credentials string or use `GOOGLE_APPLICATION_CREDENTIALS` with a local service account path.
+
 ## Data Structure
 
 The app expects GeoJSON files in the `public/data/` folder with the following structure:
