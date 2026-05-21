@@ -56,7 +56,7 @@ Plans:
 
 Plans:
 - [ ] 03-01: Add GitHub repo metadata and push instructions
-- [ ] 03-02: Document Vercel deployment and data file workflow
+- [x] 03-02: Document Vercel deployment and data file workflow
 
 ## Progress
 
@@ -64,4 +64,4 @@ Plans:
 |-------|----------------|--------|
 | Phase 1: Static Conversion | 3/3 | Complete |
 | Phase 2: Static Data Experience | 0/3 | Not started |
-| Phase 3: Deployment & Documentation | 0/2 | Not started |
+| Phase 3: Deployment & Documentation | 1/2 | In progress |
