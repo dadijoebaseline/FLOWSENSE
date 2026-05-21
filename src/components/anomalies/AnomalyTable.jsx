@@ -4,7 +4,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { ChartContainer } from '@/components/ui/chart';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ANOMALY_LABELS } from '@/lib/anomalyDetection';import { getStatusBadgeClass } from '@/lib/utils';import {
+import { Button } from '@/components/ui/button';
+import { ANOMALY_LABELS } from '@/lib/anomalyDetection';
+import { getStatusBadgeClass } from '@/lib/utils';
+import {
   Pagination,
   PaginationContent,
   PaginationItem,
@@ -12,7 +15,7 @@ import { ANOMALY_LABELS } from '@/lib/anomalyDetection';import { getStatusBadgeC
   PaginationPrevious,
   PaginationNext,
 } from '@/components/ui/pagination';
-import { Search, ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
+import { Search, ArrowUpRight, ArrowDownRight, Minus, Download } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const typeConfig = {
@@ -118,6 +121,55 @@ export default function AnomalyTable({ anomalies, initialType = 'all', initialSe
     return matchSearch && matchType && matchSeverity;
   });
 
+  function exportToExcel() {
+    const headers = [
+      'Account Number',
+      'Name',
+      'Meter',
+      'Address',
+      'Type',
+      'Severity',
+      'Average Consumption',
+      'Current Consumption',
+      'Deviation (%)',
+      'Status',
+      'Dataset ID',
+      'Latitude',
+      'Longitude',
+    ];
+
+    const rows = filtered.map(anomaly => {
+      const typeLabel = ANOMALY_LABELS[anomaly.anomalyType] || anomaly.anomalyType || '';
+      return [
+        anomaly.accountNumber || anomaly.accountId || '',
+        anomaly.name || '',
+        anomaly.meterNo || '',
+        anomaly.address || '',
+        typeLabel,
+        anomaly.severity || '',
+        anomaly.averageConsumption ?? '',
+        anomaly.currentConsumption ?? '',
+        anomaly.deviationPercent ?? '',
+        anomaly.status || '',
+        anomaly.datasetId || '',
+        anomaly.latitude ?? '',
+        anomaly.longitude ?? '',
+      ];
+    });
+
+    const escapeCsv = value => `"${String(value ?? '').replace(/"/g, '""')}"`;
+    const csvContent = [headers, ...rows].map(row => row.map(escapeCsv).join(',')).join('\r\n');
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'anomaly-records.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
   // Pagination logic
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -165,6 +217,12 @@ export default function AnomalyTable({ anomalies, initialType = 'all', initialSe
             <SelectItem value="critical">Critical</SelectItem>
           </SelectContent>
         </Select>
+        <div className="flex items-center justify-end w-full sm:w-auto">
+          <Button variant="outline" size="sm" onClick={exportToExcel}>
+            <Download className="w-4 h-4" />
+            Export to Excel
+          </Button>
+        </div>
       </div>
 
       {/* Table */}
@@ -203,10 +261,11 @@ export default function AnomalyTable({ anomalies, initialType = 'all', initialSe
                 const sc = severityConfig[anomaly.severity];
                 const Icon = tc?.icon || Minus;
                 const isPos = anomaly.deviationPercent > 0;
+                const rowKey = `${anomaly.accountNumber || anomaly.meterNo || anomaly.name || 'anomaly'}-${i}`;
 
                 return (
                   <motion.tr
-                    key={anomaly.accountNumber || i}
+                    key={rowKey}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: i * 0.02 }}
