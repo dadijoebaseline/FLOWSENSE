@@ -2,6 +2,7 @@
   "name": "flowsense-static",
   "private": true,
   "version": "0.0.0",
+  "author": "Dadi_Joe",
   "type": "module",
   "scripts": {
     "dev": "vite",

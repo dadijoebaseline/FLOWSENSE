@@ -96,6 +96,10 @@ Severity levels: Critical, High, Medium, Low
 - **State**: TanStack React Query
 - **Animations**: Framer Motion
 
+## Maintainer
+
+- **Dadi_Joe** — developer and maintainer
+
 ## Deployment
 
 This app is designed for static hosting platforms:
