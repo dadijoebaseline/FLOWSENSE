@@ -26,6 +26,10 @@ export default function AdminUsers() {
       });
 
       if (!response.ok) {
+        // 404 expected on static deployment (no backend API)
+        if (response.status === 404) {
+          throw new Error('Admin API not available in static deployment. User management requires backend.');
+        }
         const data = await response.json().catch(() => ({}));
         throw new Error(data.error || 'Unable to load users');
       }
@@ -33,6 +37,10 @@ export default function AdminUsers() {
       const data = await response.json();
       setUsers(data.users || []);
     } catch (err) {
+      // Suppress logging for expected 404 errors
+      if (!err.message.includes('static deployment')) {
+        console.debug('AdminUsers fetch error:', err.message);
+      }
       setError(err.message || 'Could not load users.');
     } finally {
       setLoading(false);
@@ -78,6 +86,10 @@ export default function AdminUsers() {
       });
 
       if (!response.ok) {
+        // 404 expected on static deployment (no backend API)
+        if (response.status === 404) {
+          throw new Error('Admin API not available in static deployment. User management requires backend.');
+        }
         const data = await response.json().catch(() => ({}));
         throw new Error(data.error || 'Unable to update user.');
       }
@@ -86,6 +98,9 @@ export default function AdminUsers() {
       setMessage('User updated successfully.');
       setUsers((current) => current.map((item) => (item.id === userId ? data.user : item)));
     } catch (err) {
+      if (!err.message.includes('static deployment')) {
+        console.debug('AdminUsers update error:', err.message);
+      }
       setError(err.message || 'Update failed.');
     }
   };
@@ -107,6 +122,10 @@ export default function AdminUsers() {
       });
 
       if (!response.ok) {
+        // 404 expected on static deployment (no backend API)
+        if (response.status === 404) {
+          throw new Error('Admin API not available in static deployment. User management requires backend.');
+        }
         const data = await response.json().catch(() => ({}));
         throw new Error(data.error || 'Unable to remove user.');
       }
@@ -114,6 +133,9 @@ export default function AdminUsers() {
       setMessage('User removed successfully.');
       setUsers((current) => current.filter((item) => item.id !== userId));
     } catch (err) {
+      if (!err.message.includes('static deployment')) {
+        console.debug('AdminUsers delete error:', err.message);
+      }
       setError(err.message || 'Remove failed.');
     }
   };
