@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
+import { firestore } from '@/lib/firebase';
+import { collection, query, getDocs } from 'firebase/firestore';
 
 const ROLE_OPTIONS = ['viewer', 'manager'];
 
@@ -19,41 +21,41 @@ export default function AdminUsers() {
       const token = await getIdToken();
       if (!token) throw new Error('Not authenticated');
 
-      const response = await fetch('/api/admin/users', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      // Try API first (backend deployment)
+      try {
+        const response = await fetch('/api/admin/users', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
-      if (!response.ok) {
-        // 404 expected on static deployment (no backend API)
-        if (response.status === 404) {
-          // Fallback: Get current user from AuthContext
-          if (user) {
-            setUsers([
-              {
-                id: user.uid,
-                email: user.email,
-                displayName: user.displayName,
-                role: user.role,
-                createdAt: new Date().toISOString(),
-                isCurrentUser: true,
-              },
-            ]);
-          }
+        if (response.ok) {
+          const data = await response.json();
+          setUsers(data.users || []);
           return;
         }
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.error || 'Unable to load users');
+      } catch (apiError) {
+        // API failed, will try Firestore
       }
 
-      const data = await response.json();
-      setUsers(data.users || []);
+      // Fallback: Query Firestore directly (static deployment)
+      const usersCollection = collection(firestore, 'flowsense_users');
+      const q = query(usersCollection);
+      const snapshot = await getDocs(q);
+      const firestoreUsers = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        name: doc.data().name || 'User',
+        email: doc.data().email || '',
+        displayName: doc.data().name || 'User',
+        role: doc.data().role || 'viewer',
+        banned: doc.data().banned || false,
+        createdAt: doc.data().createdAt || new Date().toISOString(),
+        updatedAt: doc.data().updatedAt || new Date().toISOString(),
+      }));
+
+      setUsers(firestoreUsers);
     } catch (err) {
-      // Suppress logging for expected 404 errors
-      if (!err.message.includes('static deployment')) {
-        console.debug('AdminUsers fetch error:', err.message);
-      }
+      console.debug('AdminUsers fetch error:', err.message);
       setError(err.message || 'Could not load users.');
     } finally {
       setLoading(false);
