@@ -9,6 +9,24 @@ const ADMIN_EMAIL = normalizeEmail(import.meta.env.VITE_ADMIN_EMAIL || '');
 
 const getRoleFromEmail = (email) => (normalizeEmail(email) === ADMIN_EMAIL ? 'admin' : 'viewer');
 
+// Check for admin role from custom claims or email
+const getRoleFromCustomClaimsOrEmail = async (firebaseUser, session) => {
+  try {
+    if (firebaseUser) {
+      const idTokenResult = await firebaseUser.getIdTokenResult(true);
+      const customClaims = idTokenResult.claims;
+      if (customClaims.admin === true) {
+        return 'admin';
+      }
+    }
+  } catch (err) {
+    console.debug('Could not check custom claims:', err.message);
+  }
+  
+  // Fallback to email-based role check
+  return getRoleFromEmail(session?.user?.email || '');
+};
+
 const fetchUserSession = async (idToken, firebaseUser = null) => {
   try {
     const response = await fetch('/api/auth/session', {
@@ -66,9 +84,10 @@ export const AuthProvider = ({ children }) => {
         if (disposed) return;
 
         if (session.success && session.user) {
+          const role = await getRoleFromCustomClaimsOrEmail(firebaseUser, session);
           const userWithRole = {
             ...session.user,
-            role: getRoleFromEmail(session.user.email),
+            role,
           };
           setUser(userWithRole);
           setIsAuthenticated(true);
@@ -141,9 +160,10 @@ export const AuthProvider = ({ children }) => {
         return { success: false, error: session.error || 'auth_required', message: session.message || 'Authentication failed.' };
       }
 
+      const role = await getRoleFromCustomClaimsOrEmail(firebaseUser, session);
       const userWithRole = {
         ...session.user,
-        role: getRoleFromEmail(session.user.email),
+        role,
       };
       setUser(userWithRole);
       setIsAuthenticated(true);

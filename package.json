@@ -11,7 +11,8 @@
     "lint": "eslint . --quiet",
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc -p ./jsconfig.json",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "setup:admin-claims": "node scripts/setup-admin-claims.js"
   },
   "dependencies": {
     "@auth/core": "^0.34.3",
@@ -52,6 +53,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
     "cookie": "^1.1.1",
+    "dotenv": "^16.4.5",
     "date-fns": "^3.6.0",
     "embla-carousel-react": "^8.5.2",
     "firebase": "^12.13.0",

@@ -3,6 +3,11 @@
 .env.*
 !.env.example
 
+# Firebase service account keys (KEEP SECRET!)
+serviceAccountKey.json
+firebase-*-adminsdk-*.json
+*.key.json
+
 # Logs
 /logs
 *.log
