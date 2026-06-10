@@ -1,0 +1,278 @@
+import React, { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { motion } from 'framer-motion';
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from 'recharts';
+import { staticDataService } from '../../lib/staticDataService';
+import { getClassificationName } from '../../lib/rateCodeMap';
+
+const COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
+
+function LoadingChart() {
+  return (
+    <div className="h-64 bg-slate-700/50 rounded-lg animate-pulse" />
+  );
+}
+
+function MetricBox({ label, value, unit = '' }) {
+  return (
+    <div className="rounded-lg p-4 bg-slate-900/50 border border-slate-700">
+      <p className="text-xs text-slate-400 mb-1">{label}</p>
+      <p className="text-2xl font-bold text-white">
+        {typeof value === 'number'
+          ? value.toLocaleString('en-US', { maximumFractionDigits: 1 })
+          : value}
+        {unit && <span className="text-sm ml-1">{unit}</span>}
+      </p>
+    </div>
+  );
+}
+
+export default function ConsumptionAnalytics({ selectedMonth }) {
+  // Fetch consumption by area per month
+  const { data: consumptionByArea, isLoading: isLoadingArea } = useQuery({
+    queryKey: ['consumptionByArea'],
+    queryFn: () => staticDataService.getConsumptionByAreaPerMonth(),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Fetch metrics by classification per month
+  const { data: metricsByClassification, isLoading: isLoadingClassification } = useQuery({
+    queryKey: ['metricsByClassification'],
+    queryFn: () => staticDataService.getMetricsByClassificationPerMonth(),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Prepare consumption by area chart data for selected month
+  const consumptionAreaChartData = useMemo(() => {
+    if (!consumptionByArea || !selectedMonth) return [];
+
+    return Object.entries(consumptionByArea)
+      .map(([area, monthData]) => ({
+        name: area,
+        consumption: monthData[selectedMonth]?.total || 0,
+      }))
+      .sort((a, b) => b.consumption - a.consumption)
+      .slice(0, 10);
+  }, [consumptionByArea, selectedMonth]);
+
+  // Prepare consumption by classification chart data for selected month
+  const consumptionClassificationChartData = useMemo(() => {
+    if (!metricsByClassification || !selectedMonth) return [];
+
+    return Object.entries(metricsByClassification)
+      .map(([rateCode, monthData]) => ({
+        name: getClassificationName(rateCode),
+        rateCode,
+        consumption: monthData[selectedMonth]?.consumption?.total || 0,
+      }))
+      .sort((a, b) => b.consumption - a.consumption)
+      .slice(0, 8);
+  }, [metricsByClassification, selectedMonth]);
+
+  // Calculate metrics for selected month
+  const monthMetrics = useMemo(() => {
+    if (!consumptionByArea || !selectedMonth) {
+      return { total: 0, avg: 0, min: 0, max: 0, topArea: '' };
+    }
+
+    let total = 0;
+    let min = Infinity;
+    let max = 0;
+    let topArea = '';
+    let topValue = 0;
+    let count = 0;
+
+    for (const [area, monthData] of Object.entries(consumptionByArea)) {
+      const data = monthData[selectedMonth];
+      if (!data) continue;
+
+      total += data.total;
+      min = Math.min(min, data.min);
+      max = Math.max(max, data.max);
+      count += 1;
+
+      if (data.total > topValue) {
+        topValue = data.total;
+        topArea = area;
+      }
+    }
+
+    return {
+      total: Math.round(total * 100) / 100,
+      avg: count > 0 ? Math.round((total / count) * 100) / 100 : 0,
+      min: min === Infinity ? 0 : Math.round(min * 100) / 100,
+      max: Math.round(max * 100) / 100,
+      topArea,
+    };
+  }, [consumptionByArea, selectedMonth]);
+
+  return (
+    <div className="space-y-6">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="space-y-2"
+      >
+        <h2 className="text-2xl font-bold text-white">Consumption Analytics</h2>
+        <p className="text-sm text-slate-400">
+          Water consumption breakdown by area and classification for {selectedMonth}
+        </p>
+      </motion.div>
+
+      {/* Key Metrics */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.1 }}
+        className="grid grid-cols-2 md:grid-cols-4 gap-3"
+      >
+        <MetricBox label="Total Consumption" value={monthMetrics.total} unit="cu.m" />
+        <MetricBox label="Avg per Area" value={monthMetrics.avg} unit="cu.m" />
+        <MetricBox label="Min Area" value={monthMetrics.min} unit="cu.m" />
+        <MetricBox label="Max Area" value={monthMetrics.max} unit="cu.m" />
+      </motion.div>
+
+      {/* Charts */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.2 }}
+        className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+      >
+        {/* Top 10 Areas by Consumption */}
+        <div
+          className="rounded-xl p-6"
+          style={{
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.08)',
+          }}
+        >
+          <h3 className="text-lg font-semibold text-white mb-4">
+            Top 10 Areas by Consumption
+          </h3>
+          {isLoadingArea ? (
+            <LoadingChart />
+          ) : (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={consumptionAreaChartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#cbd5e1' }} />
+                <YAxis tick={{ fontSize: 12, fill: '#cbd5e1' }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '8px',
+                  }}
+                  formatter={(value) => [
+                    `${(value || 0).toLocaleString('en-US', {
+                      maximumFractionDigits: 1,
+                    })} cu.m`,
+                  ]}
+                />
+                <Bar dataKey="consumption" fill="#3b82f6" radius={[8, 8, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+
+        {/* Top 8 Classifications by Consumption */}
+        <div
+          className="rounded-xl p-6"
+          style={{
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.08)',
+          }}
+        >
+          <h3 className="text-lg font-semibold text-white mb-4">
+            Top Classifications by Consumption
+          </h3>
+          {isLoadingClassification ? (
+            <LoadingChart />
+          ) : (
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={consumptionClassificationChartData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) =>
+                    `${name}: ${(percent * 100).toFixed(0)}%`
+                  }
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="consumption"
+                >
+                  {consumptionClassificationChartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(value) => [
+                    `${(value || 0).toLocaleString('en-US', {
+                      maximumFractionDigits: 1,
+                    })} cu.m`,
+                  ]}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      </motion.div>
+
+      {/* Top 10 Consumers List */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.3 }}
+        className="rounded-xl p-6"
+        style={{
+          background: 'rgba(255,255,255,0.03)',
+          border: '1px solid rgba(255,255,255,0.08)',
+        }}
+      >
+        <h3 className="text-lg font-semibold text-white mb-4">
+          Top 10 Consuming Areas
+        </h3>
+        {isLoadingArea ? (
+          <LoadingChart />
+        ) : (
+          <div className="space-y-2">
+            {consumptionAreaChartData.map((item, index) => (
+              <div
+                key={item.name}
+                className="flex items-center justify-between p-3 rounded-lg bg-slate-900/50 border border-slate-700/50"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-xl font-bold text-blue-400">#{index + 1}</span>
+                  <span className="text-white font-medium">{item.name}</span>
+                </div>
+                <span className="text-blue-300 font-semibold">
+                  {item.consumption.toLocaleString('en-US', {
+                    maximumFractionDigits: 1,
+                  })}{' '}
+                  cu.m
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </motion.div>
+    </div>
+  );
+}

@@ -9,18 +9,26 @@ import {
   AlertCircle,
   Zap,
   DollarSign,
+  BarChart3,
+  MapPin,
+  TrendingDown,
+  Layers,
 } from 'lucide-react';
 import { staticDataService } from '../lib/staticDataService';
 import { getClassificationName } from '../lib/rateCodeMap';
+import ConsumptionAnalytics from '../components/analytics/ConsumptionAnalytics';
+import RevenueAnalytics from '../components/analytics/RevenueAnalytics';
+import AreaAnalytics from '../components/analytics/AreaAnalytics';
+import RouteAnalytics from '../components/analytics/RouteAnalytics';
+import StatusClassificationAnalytics from '../components/analytics/StatusClassificationAnalytics';
 
-const KPI_ICONS = [
-  { Icon: Droplets, color: 'text-blue-400', label: 'Total Consumption' },
-  { Icon: DollarSign, color: 'text-green-400', label: 'Total Revenue' },
-  { Icon: Users, color: 'text-purple-400', label: 'Total Accounts' },
-  { Icon: Activity, color: 'text-orange-400', label: 'Active Accounts' },
-  { Icon: AlertCircle, color: 'text-red-400', label: 'Disconnected' },
-  { Icon: TrendingUp, color: 'text-cyan-400', label: 'Avg Consumption/Account' },
-  { Icon: Zap, color: 'text-yellow-400', label: 'Avg Revenue/Account' },
+const TABS = [
+  { id: 'kpi', label: 'Dashboard', icon: '📊' },
+  { id: 'consumption', label: 'Consumption', icon: '💧' },
+  { id: 'revenue', label: 'Revenue', icon: '💰' },
+  { id: 'area', label: 'Area Performance', icon: '🗺️' },
+  { id: 'route', label: 'Route Efficiency', icon: '🛣️' },
+  { id: 'status', label: 'Status & Classification', icon: '📋' },
 ];
 
 function KPICard({ icon: Icon, value, label, color, loading, decimals = 0 }) {
@@ -62,9 +70,20 @@ function KPICard({ icon: Icon, value, label, color, loading, decimals = 0 }) {
   );
 }
 
+const KPI_ICONS = [
+  { Icon: Droplets, color: 'text-blue-400', label: 'Total Consumption' },
+  { Icon: DollarSign, color: 'text-green-400', label: 'Total Revenue' },
+  { Icon: Users, color: 'text-purple-400', label: 'Total Accounts' },
+  { Icon: Activity, color: 'text-orange-400', label: 'Active Accounts' },
+  { Icon: AlertCircle, color: 'text-red-400', label: 'Disconnected' },
+  { Icon: TrendingUp, color: 'text-cyan-400', label: 'Avg Consumption/Account' },
+  { Icon: Zap, color: 'text-yellow-400', label: 'Avg Revenue/Account' },
+];
+
 export default function Analytics() {
   const [selectedMonth, setSelectedMonth] = useState(null);
   const [monthOptions, setMonthOptions] = useState([]);
+  const [activeTab, setActiveTab] = useState('kpi');
 
   // Load available months
   useEffect(() => {
@@ -127,7 +146,7 @@ export default function Analytics() {
   );
 
   return (
-    <div className="space-y-8 p-6">
+    <div className="space-y-6 p-6">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -16 }}
@@ -165,6 +184,29 @@ export default function Analytics() {
         </div>
       </motion.div>
 
+      {/* Tab Navigation */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.15 }}
+        className="flex items-center gap-2 overflow-x-auto pb-2"
+      >
+        {TABS.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
+              activeTab === tab.id
+                ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/50'
+                : 'bg-slate-900/50 text-slate-300 border border-slate-700 hover:border-slate-600'
+            }`}
+          >
+            <span className="mr-2">{tab.icon}</span>
+            {tab.label}
+          </button>
+        ))}
+      </motion.div>
+
       {/* Error State */}
       {errorKPI && (
         <motion.div
@@ -178,41 +220,56 @@ export default function Analytics() {
         </motion.div>
       )}
 
-      {/* KPI Cards Grid */}
+      {/* Tab Content */}
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2 }}
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+        key={activeTab}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2 }}
       >
-        {kpiData.map((kpi, index) => (
-          <KPICard
-            key={`kpi-${index}`}
-            icon={KPI_ICONS[index % KPI_ICONS.length].Icon}
-            color={KPI_ICONS[index % KPI_ICONS.length].color}
-            value={kpi.value}
-            label={kpi.label}
-            loading={isLoadingKPI}
-            decimals={kpi.decimals}
-          />
-        ))}
-      </motion.div>
+        {/* Dashboard Tab - KPI Cards */}
+        {activeTab === 'kpi' && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {kpiData.map((kpi, index) => (
+                <KPICard
+                  key={`kpi-${index}`}
+                  icon={KPI_ICONS[index % KPI_ICONS.length].Icon}
+                  color={KPI_ICONS[index % KPI_ICONS.length].color}
+                  value={kpi.value}
+                  label={kpi.label}
+                  loading={isLoadingKPI}
+                  decimals={kpi.decimals}
+                />
+              ))}
+            </div>
+          </div>
+        )}
 
-      {/* Placeholder for future modules */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.3 }}
-        className="rounded-2xl p-8 text-center"
-        style={{
-          background: 'rgba(255,255,255,0.03)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
-        }}
-      >
-        <p className="text-slate-400">
-          Analytics modules and filtering system coming in Phase 2-3...
-        </p>
+        {/* Consumption Analytics Tab */}
+        {activeTab === 'consumption' && selectedMonth && (
+          <ConsumptionAnalytics selectedMonth={selectedMonth} />
+        )}
+
+        {/* Revenue Analytics Tab */}
+        {activeTab === 'revenue' && selectedMonth && (
+          <RevenueAnalytics selectedMonth={selectedMonth} />
+        )}
+
+        {/* Area Analytics Tab */}
+        {activeTab === 'area' && selectedMonth && (
+          <AreaAnalytics selectedMonth={selectedMonth} />
+        )}
+
+        {/* Route Analytics Tab */}
+        {activeTab === 'route' && selectedMonth && (
+          <RouteAnalytics selectedMonth={selectedMonth} />
+        )}
+
+        {/* Status & Classification Tab */}
+        {activeTab === 'status' && selectedMonth && (
+          <StatusClassificationAnalytics selectedMonth={selectedMonth} />
+        )}
       </motion.div>
     </div>
   );
