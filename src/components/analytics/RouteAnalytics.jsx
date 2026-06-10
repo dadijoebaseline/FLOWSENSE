@@ -1,5 +1,4 @@
 import React, { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
   BarChart,
@@ -13,7 +12,6 @@ import {
   ScatterChart,
   Scatter,
 } from 'recharts';
-import { staticDataService } from '../../lib/staticDataService';
 
 function LoadingChart() {
   return (
@@ -35,76 +33,85 @@ function MetricBox({ label, value, unit = '' }) {
   );
 }
 
-export default function RouteAnalytics({ selectedMonth }) {
-  // Fetch revenue by route per month
-  const { data: revenueByRoute, isLoading: isLoadingRevenue } = useQuery({
-    queryKey: ['revenueByRoute'],
-    queryFn: () => staticDataService.getRevenueByRoutePerMonth(),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  // Prepare route efficiency data for selected month
+export default function RouteAnalytics({ selectedMonth, filteredAccounts = [] }) {
+  // Prepare route efficiency data for selected month from filtered accounts
   const routeEfficiencyData = useMemo(() => {
-    if (!revenueByRoute || !selectedMonth) return [];
+    const routeMap = {};
 
-    return Object.entries(revenueByRoute)
-      .map(([route, monthData]) => {
-        const data = monthData[selectedMonth];
-        return {
-          name: route,
-          revenue: data?.total || 0,
-          avgRevenue: data?.avg || 0,
-          accounts: data?.count || 0,
-          efficiency: data?.count > 0 ? (data.total / data.count).toFixed(2) : 0, // Revenue per account
-        };
-      })
-      .sort((a, b) => b.efficiency - a.efficiency)
-      .slice(0, 15);
-  }, [revenueByRoute, selectedMonth]);
+    for (const account of filteredAccounts) {
+      if (account.datasetId !== selectedMonth || !account.bookNo) continue;
 
-  // Top 10 routes by revenue
-  const topRevenueRoutes = useMemo(() => {
-    if (!revenueByRoute || !selectedMonth) return [];
-
-    return Object.entries(revenueByRoute)
-      .map(([route, monthData]) => {
-        const data = monthData[selectedMonth];
-        return {
-          name: route,
-          revenue: data?.total || 0,
-          avgRevenue: data?.avg || 0,
-          accounts: data?.count || 0,
-        };
-      })
-      .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 10);
-  }, [revenueByRoute, selectedMonth]);
-
-  // Calculate route metrics
-  const routeMetrics = useMemo(() => {
-    if (!revenueByRoute || !selectedMonth) {
-      return { totalRoutes: 0, avgRevenue: 0, topRoute: '', totalRevenue: 0 };
+      if (!routeMap[account.bookNo]) {
+        routeMap[account.bookNo] = { revenue: 0, count: 0 };
+      }
+      routeMap[account.bookNo].revenue += Number(account.billAmount) || 0;
+      routeMap[account.bookNo].count += 1;
     }
 
+    return Object.entries(routeMap)
+      .map(([route, data]) => ({
+        name: route,
+        revenue: data.revenue,
+        avgRevenue: data.count > 0 ? data.revenue / data.count : 0,
+        accounts: data.count,
+        efficiency: data.count > 0 ? data.revenue / data.count : 0,
+      }))
+      .sort((a, b) => b.efficiency - a.efficiency)
+      .slice(0, 15);
+  }, [filteredAccounts, selectedMonth]);
+
+  // Top 10 routes by revenue from filtered accounts
+  const topRevenueRoutes = useMemo(() => {
+    const routeMap = {};
+
+    for (const account of filteredAccounts) {
+      if (account.datasetId !== selectedMonth || !account.bookNo) continue;
+
+      if (!routeMap[account.bookNo]) {
+        routeMap[account.bookNo] = { revenue: 0, count: 0 };
+      }
+      routeMap[account.bookNo].revenue += Number(account.billAmount) || 0;
+      routeMap[account.bookNo].count += 1;
+    }
+
+    return Object.entries(routeMap)
+      .map(([route, data]) => ({
+        name: route,
+        revenue: data.revenue,
+        avgRevenue: data.count > 0 ? data.revenue / data.count : 0,
+        accounts: data.count,
+      }))
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 10);
+  }, [filteredAccounts, selectedMonth]);
+
+  // Calculate route metrics from filtered accounts
+  const routeMetrics = useMemo(() => {
+    const routeMap = {};
     let totalRevenue = 0;
     let totalAccounts = 0;
     let topRoute = '';
     let topValue = 0;
-    let routeCount = 0;
 
-    for (const [route, monthData] of Object.entries(revenueByRoute)) {
-      const data = monthData[selectedMonth];
-      if (!data) continue;
+    for (const account of filteredAccounts) {
+      if (account.datasetId !== selectedMonth || !account.bookNo) continue;
 
-      totalRevenue += data.total;
-      totalAccounts += data.count;
-      routeCount += 1;
+      const revenue = Number(account.billAmount) || 0;
 
-      if (data.total > topValue) {
-        topValue = data.total;
-        topRoute = route;
+      if (!routeMap[account.bookNo]) {
+        routeMap[account.bookNo] = 0;
+      }
+      routeMap[account.bookNo] += revenue;
+      totalRevenue += revenue;
+      totalAccounts += 1;
+
+      if (routeMap[account.bookNo] > topValue) {
+        topValue = routeMap[account.bookNo];
+        topRoute = account.bookNo;
       }
     }
+
+    const routeCount = Object.keys(routeMap).length;
 
     return {
       totalRoutes: routeCount,
@@ -112,7 +119,7 @@ export default function RouteAnalytics({ selectedMonth }) {
       topRoute,
       totalRevenue: Math.round(totalRevenue * 100) / 100,
     };
-  }, [revenueByRoute, selectedMonth]);
+  }, [filteredAccounts, selectedMonth]);
 
   return (
     <div className="space-y-6">
@@ -158,8 +165,8 @@ export default function RouteAnalytics({ selectedMonth }) {
           <h3 className="text-lg font-semibold text-white mb-4">
             Top 10 Routes by Revenue
           </h3>
-          {isLoadingRevenue ? (
-            <LoadingChart />
+          {topRevenueRoutes.length === 0 ? (
+            <div className="h-64 flex items-center justify-center text-slate-400">No data available</div>
           ) : (
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={topRevenueRoutes}>
@@ -201,8 +208,8 @@ export default function RouteAnalytics({ selectedMonth }) {
           <h3 className="text-lg font-semibold text-white mb-4">
             Route Efficiency (Revenue per Account)
           </h3>
-          {isLoadingRevenue ? (
-            <LoadingChart />
+          {routeEfficiencyData.length === 0 ? (
+            <div className="h-64 flex items-center justify-center text-slate-400">No data available</div>
           ) : (
             <ResponsiveContainer width="100%" height={300}>
               <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
@@ -264,8 +271,8 @@ export default function RouteAnalytics({ selectedMonth }) {
         <h3 className="text-lg font-semibold text-white mb-4">
           Top 15 Routes by Efficiency
         </h3>
-        {isLoadingRevenue ? (
-          <LoadingChart />
+        {routeEfficiencyData.length === 0 ? (
+          <div className="text-slate-400">No data available</div>
         ) : (
           <div className="space-y-2">
             {routeEfficiencyData.map((item, index) => (

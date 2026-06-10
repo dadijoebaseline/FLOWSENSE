@@ -1,5 +1,4 @@
 import React, { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
   BarChart,
@@ -13,7 +12,6 @@ import {
   ComposedChart,
   Line,
 } from 'recharts';
-import { staticDataService } from '../../lib/staticDataService';
 
 function LoadingChart() {
   return (
@@ -35,69 +33,59 @@ function MetricBox({ label, value, unit = '' }) {
   );
 }
 
-export default function AreaAnalytics({ selectedMonth }) {
-  // Fetch consumption and status data
-  const { data: consumptionByArea, isLoading: isLoadingConsumption } = useQuery({
-    queryKey: ['consumptionByArea'],
-    queryFn: () => staticDataService.getConsumptionByAreaPerMonth(),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const { data: revenueByRoute, isLoading: isLoadingRevenue } = useQuery({
-    queryKey: ['revenueByRoute'],
-    queryFn: () => staticDataService.getRevenueByRoutePerMonth(),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const { data: statusByMonth, isLoading: isLoadingStatus } = useQuery({
-    queryKey: ['statusByMonth'],
-    queryFn: () => staticDataService.getAccountsByStatusPerMonth(),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  // Prepare area performance data for selected month
+export default function AreaAnalytics({ selectedMonth, filteredAccounts = [] }) {
+  // Prepare area performance data for selected month from filtered accounts
   const areaPerformanceData = useMemo(() => {
-    if (!consumptionByArea || !selectedMonth) return [];
+    const areaMap = {};
 
-    return Object.entries(consumptionByArea)
-      .map(([area, monthData]) => {
-        const data = monthData[selectedMonth];
-        return {
-          name: area,
-          consumption: data?.total || 0,
-          avgConsumption: data?.avg || 0,
-          accounts: data?.count || 0,
-        };
-      })
-      .sort((a, b) => b.consumption - a.consumption)
-      .slice(0, 10);
-  }, [consumptionByArea, selectedMonth]);
+    for (const account of filteredAccounts) {
+      if (account.datasetId !== selectedMonth || !account.area) continue;
 
-  // Calculate area metrics
-  const areaMetrics = useMemo(() => {
-    if (!consumptionByArea || !selectedMonth) {
-      return { totalAreas: 0, avgConsumption: 0, topArea: '', totalAccounts: 0 };
+      if (!areaMap[account.area]) {
+        areaMap[account.area] = { consumption: 0, count: 0 };
+      }
+      areaMap[account.area].consumption += Number(account.cumUsed) || 0;
+      areaMap[account.area].count += 1;
     }
 
+    return Object.entries(areaMap)
+      .map(([area, data]) => ({
+        name: area,
+        consumption: data.consumption,
+        avgConsumption: data.count > 0 ? data.consumption / data.count : 0,
+        accounts: data.count,
+      }))
+      .sort((a, b) => b.consumption - a.consumption)
+      .slice(0, 10);
+  }, [filteredAccounts, selectedMonth]);
+
+  // Calculate area metrics from filtered accounts
+  const areaMetrics = useMemo(() => {
+    const areaMap = {};
     let totalConsumption = 0;
     let totalAccounts = 0;
     let topArea = '';
     let topValue = 0;
-    let areaCount = 0;
 
-    for (const [area, monthData] of Object.entries(consumptionByArea)) {
-      const data = monthData[selectedMonth];
-      if (!data) continue;
+    for (const account of filteredAccounts) {
+      if (account.datasetId !== selectedMonth || !account.area) continue;
 
-      totalConsumption += data.total;
-      totalAccounts += data.count;
-      areaCount += 1;
+      const consumption = Number(account.cumUsed) || 0;
 
-      if (data.total > topValue) {
-        topValue = data.total;
-        topArea = area;
+      if (!areaMap[account.area]) {
+        areaMap[account.area] = 0;
+      }
+      areaMap[account.area] += consumption;
+      totalConsumption += consumption;
+      totalAccounts += 1;
+
+      if (areaMap[account.area] > topValue) {
+        topValue = areaMap[account.area];
+        topArea = account.area;
       }
     }
+
+    const areaCount = Object.keys(areaMap).length;
 
     return {
       totalAreas: areaCount,
@@ -105,17 +93,26 @@ export default function AreaAnalytics({ selectedMonth }) {
       topArea,
       totalAccounts,
     };
-  }, [consumptionByArea, selectedMonth]);
+  }, [filteredAccounts, selectedMonth]);
 
-  // Status distribution for selected month
+  // Status distribution from filtered accounts
   const statusData = useMemo(() => {
-    if (!statusByMonth || !selectedMonth) return [];
+    const statusMap = {};
 
-    return Object.entries(statusByMonth).map(([status, monthData]) => ({
+    for (const account of filteredAccounts) {
+      if (account.datasetId !== selectedMonth || !account.status) continue;
+
+      if (!statusMap[account.status]) {
+        statusMap[account.status] = 0;
+      }
+      statusMap[account.status] += 1;
+    }
+
+    return Object.entries(statusMap).map(([status, count]) => ({
       name: status,
-      count: monthData[selectedMonth]?.count || 0,
+      count,
     }));
-  }, [statusByMonth, selectedMonth]);
+  }, [filteredAccounts, selectedMonth]);
 
   return (
     <div className="space-y-6">
@@ -161,8 +158,8 @@ export default function AreaAnalytics({ selectedMonth }) {
           <h3 className="text-lg font-semibold text-white mb-4">
             Top 10 Areas - Consumption & Account Count
           </h3>
-          {isLoadingConsumption ? (
-            <LoadingChart />
+          {areaPerformanceData.length === 0 ? (
+            <div className="h-64 flex items-center justify-center text-slate-400">No data available</div>
           ) : (
             <ResponsiveContainer width="100%" height={300}>
               <ComposedChart data={areaPerformanceData}>
@@ -220,8 +217,8 @@ export default function AreaAnalytics({ selectedMonth }) {
           <h3 className="text-lg font-semibold text-white mb-4">
             Account Status Distribution
           </h3>
-          {isLoadingStatus ? (
-            <LoadingChart />
+          {statusData.length === 0 ? (
+            <div className="h-64 flex items-center justify-center text-slate-400">No data available</div>
           ) : (
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={statusData}>
@@ -262,8 +259,8 @@ export default function AreaAnalytics({ selectedMonth }) {
         <h3 className="text-lg font-semibold text-white mb-4">
           Top 10 Areas by Performance
         </h3>
-        {isLoadingConsumption ? (
-          <LoadingChart />
+        {areaPerformanceData.length === 0 ? (
+          <div className="text-slate-400">No data available</div>
         ) : (
           <div className="space-y-2">
             {areaPerformanceData.map((item, index) => (

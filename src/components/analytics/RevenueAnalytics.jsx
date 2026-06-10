@@ -1,22 +1,18 @@
 import React, { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
   BarChart,
   Bar,
-  LineChart,
-  Line,
+  PieChart,
+  Pie,
+  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   Legend,
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
 } from 'recharts';
-import { staticDataService } from '../../lib/staticDataService';
 import { getClassificationName } from '../../lib/rateCodeMap';
 
 const COLORS = ['#10b981', '#ef4444', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899'];
@@ -41,84 +37,89 @@ function MetricBox({ label, value, unit = '' }) {
   );
 }
 
-export default function RevenueAnalytics({ selectedMonth }) {
-  // Fetch revenue by route per month
-  const { data: revenueByRoute, isLoading: isLoadingRoute } = useQuery({
-    queryKey: ['revenueByRoute'],
-    queryFn: () => staticDataService.getRevenueByRoutePerMonth(),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  // Fetch metrics by classification per month
-  const { data: metricsByClassification, isLoading: isLoadingClassification } = useQuery({
-    queryKey: ['metricsByClassification'],
-    queryFn: () => staticDataService.getMetricsByClassificationPerMonth(),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  // Prepare revenue by route chart data for selected month
+export default function RevenueAnalytics({ selectedMonth, filteredAccounts = [] }) {
+  // Prepare revenue by route chart data for selected month from filtered accounts
   const revenueRouteChartData = useMemo(() => {
-    if (!revenueByRoute || !selectedMonth) return [];
+    const routeMap = {};
 
-    return Object.entries(revenueByRoute)
-      .map(([route, monthData]) => ({
+    for (const account of filteredAccounts) {
+      if (account.datasetId !== selectedMonth || !account.bookNo || account.billAmount === undefined) continue;
+
+      if (!routeMap[account.bookNo]) {
+        routeMap[account.bookNo] = 0;
+      }
+      routeMap[account.bookNo] += Number(account.billAmount) || 0;
+    }
+
+    return Object.entries(routeMap)
+      .map(([route, revenue]) => ({
         name: route,
-        revenue: monthData[selectedMonth]?.total || 0,
+        revenue,
       }))
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 10);
-  }, [revenueByRoute, selectedMonth]);
+  }, [filteredAccounts, selectedMonth]);
 
-  // Prepare revenue by classification chart data for selected month
+  // Prepare revenue by classification chart data for selected month from filtered accounts
   const revenueClassificationChartData = useMemo(() => {
-    if (!metricsByClassification || !selectedMonth) return [];
+    const classificationMap = {};
 
-    return Object.entries(metricsByClassification)
-      .map(([rateCode, monthData]) => ({
+    for (const account of filteredAccounts) {
+      if (account.datasetId !== selectedMonth || !account.rateCode || account.billAmount === undefined) continue;
+
+      if (!classificationMap[account.rateCode]) {
+        classificationMap[account.rateCode] = 0;
+      }
+      classificationMap[account.rateCode] += Number(account.billAmount) || 0;
+    }
+
+    return Object.entries(classificationMap)
+      .map(([rateCode, revenue]) => ({
         name: getClassificationName(rateCode),
         rateCode,
-        revenue: monthData[selectedMonth]?.revenue?.total || 0,
+        revenue,
       }))
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 8);
-  }, [metricsByClassification, selectedMonth]);
+  }, [filteredAccounts, selectedMonth]);
 
   // Calculate metrics for selected month
   const monthMetrics = useMemo(() => {
-    if (!revenueByRoute || !selectedMonth) {
-      return { total: 0, avg: 0, min: 0, max: 0, topRoute: '' };
-    }
-
     let total = 0;
     let min = Infinity;
     let max = 0;
     let topRoute = '';
     let topValue = 0;
-    let count = 0;
 
-    for (const [route, monthData] of Object.entries(revenueByRoute)) {
-      const data = monthData[selectedMonth];
-      if (!data) continue;
+    const routeMap = {};
 
-      total += data.total;
-      min = Math.min(min, data.min);
-      max = Math.max(max, data.max);
-      count += 1;
+    for (const account of filteredAccounts) {
+      if (account.datasetId !== selectedMonth || account.billAmount === undefined) continue;
 
-      if (data.total > topValue) {
-        topValue = data.total;
-        topRoute = route;
+      const revenue = Number(account.billAmount) || 0;
+      total += revenue;
+      min = Math.min(min, revenue);
+      max = Math.max(max, revenue);
+
+      if (account.bookNo) {
+        if (!routeMap[account.bookNo]) routeMap[account.bookNo] = 0;
+        routeMap[account.bookNo] += revenue;
+
+        if (routeMap[account.bookNo] > topValue) {
+          topValue = routeMap[account.bookNo];
+          topRoute = account.bookNo;
+        }
       }
     }
 
     return {
       total: Math.round(total * 100) / 100,
-      avg: count > 0 ? Math.round((total / count) * 100) / 100 : 0,
+      avg: filteredAccounts.length > 0 ? Math.round((total / filteredAccounts.length) * 100) / 100 : 0,
       min: min === Infinity ? 0 : Math.round(min * 100) / 100,
       max: Math.round(max * 100) / 100,
       topRoute,
     };
-  }, [revenueByRoute, selectedMonth]);
+  }, [filteredAccounts, selectedMonth]);
 
   return (
     <div className="space-y-6">
@@ -141,9 +142,9 @@ export default function RevenueAnalytics({ selectedMonth }) {
         className="grid grid-cols-2 md:grid-cols-4 gap-3"
       >
         <MetricBox label="Total Revenue" value={monthMetrics.total} unit="PHP" />
-        <MetricBox label="Avg per Route" value={monthMetrics.avg} unit="PHP" />
-        <MetricBox label="Min Route" value={monthMetrics.min} unit="PHP" />
-        <MetricBox label="Max Route" value={monthMetrics.max} unit="PHP" />
+        <MetricBox label="Avg per Account" value={monthMetrics.avg} unit="PHP" />
+        <MetricBox label="Min" value={monthMetrics.min} unit="PHP" />
+        <MetricBox label="Max" value={monthMetrics.max} unit="PHP" />
       </motion.div>
 
       {/* Charts */}
@@ -164,8 +165,8 @@ export default function RevenueAnalytics({ selectedMonth }) {
           <h3 className="text-lg font-semibold text-white mb-4">
             Top 10 Routes by Revenue
           </h3>
-          {isLoadingRoute ? (
-            <LoadingChart />
+          {revenueRouteChartData.length === 0 ? (
+            <div className="h-64 flex items-center justify-center text-slate-400">No data available</div>
           ) : (
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={revenueRouteChartData}>
@@ -201,8 +202,8 @@ export default function RevenueAnalytics({ selectedMonth }) {
           <h3 className="text-lg font-semibold text-white mb-4">
             Top Classifications by Revenue
           </h3>
-          {isLoadingClassification ? (
-            <LoadingChart />
+          {revenueClassificationChartData.length === 0 ? (
+            <div className="h-64 flex items-center justify-center text-slate-400">No data available</div>
           ) : (
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
@@ -249,8 +250,8 @@ export default function RevenueAnalytics({ selectedMonth }) {
         <h3 className="text-lg font-semibold text-white mb-4">
           Top 10 Revenue Routes
         </h3>
-        {isLoadingRoute ? (
-          <LoadingChart />
+        {revenueRouteChartData.length === 0 ? (
+          <div className="text-slate-400">No data available</div>
         ) : (
           <div className="space-y-2">
             {revenueRouteChartData.map((item, index) => (

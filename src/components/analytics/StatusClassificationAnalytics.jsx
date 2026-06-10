@@ -1,5 +1,4 @@
 import React, { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
   BarChart,
@@ -16,7 +15,6 @@ import {
   Line,
   Legend,
 } from 'recharts';
-import { staticDataService } from '../../lib/staticDataService';
 import { getClassificationName } from '../../lib/rateCodeMap';
 
 const COLORS = ['#3b82f6', '#10b981', '#ef4444', '#f59e0b', '#8b5cf6', '#ec4899'];
@@ -42,56 +40,55 @@ function MetricBox({ label, value, unit = '' }) {
   );
 }
 
-export default function StatusClassificationAnalytics({ selectedMonth }) {
-  // Fetch status data
-  const { data: statusByMonth, isLoading: isLoadingStatus } = useQuery({
-    queryKey: ['statusByMonth'],
-    queryFn: () => staticDataService.getAccountsByStatusPerMonth(),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  // Fetch metrics by classification
-  const { data: metricsByClassification, isLoading: isLoadingClassification } = useQuery({
-    queryKey: ['metricsByClassification'],
-    queryFn: () => staticDataService.getMetricsByClassificationPerMonth(),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  // Prepare status distribution data
+export default function StatusClassificationAnalytics({ selectedMonth, filteredAccounts = [] }) {
+  // Prepare status distribution data from filtered accounts
   const statusDistribution = useMemo(() => {
-    if (!statusByMonth || !selectedMonth) return [];
+    const statusMap = {};
 
-    return Object.entries(statusByMonth).map(([status, monthData]) => ({
+    for (const account of filteredAccounts) {
+      if (account.datasetId !== selectedMonth || !account.status) continue;
+
+      if (!statusMap[account.status]) {
+        statusMap[account.status] = 0;
+      }
+      statusMap[account.status] += 1;
+    }
+
+    return Object.entries(statusMap).map(([status, count]) => ({
       name: status,
-      count: monthData[selectedMonth]?.count || 0,
+      count,
     }));
-  }, [statusByMonth, selectedMonth]);
+  }, [filteredAccounts, selectedMonth]);
 
-  // Prepare classification data
+  // Prepare classification data from filtered accounts
   const classificationData = useMemo(() => {
-    if (!metricsByClassification || !selectedMonth) return [];
+    const classificationMap = {};
 
-    return Object.entries(metricsByClassification)
-      .map(([rateCode, monthData]) => {
-        const data = monthData[selectedMonth];
-        return {
-          name: getClassificationName(rateCode),
-          rateCode,
-          count: data?.count || 0,
-          consumption: data?.consumption?.total || 0,
-          revenue: data?.revenue?.total || 0,
-        };
-      })
+    for (const account of filteredAccounts) {
+      if (account.datasetId !== selectedMonth || !account.rateCode) continue;
+
+      if (!classificationMap[account.rateCode]) {
+        classificationMap[account.rateCode] = { count: 0, consumption: 0, revenue: 0 };
+      }
+      classificationMap[account.rateCode].count += 1;
+      classificationMap[account.rateCode].consumption += Number(account.cumUsed) || 0;
+      classificationMap[account.rateCode].revenue += Number(account.billAmount) || 0;
+    }
+
+    return Object.entries(classificationMap)
+      .map(([rateCode, data]) => ({
+        name: getClassificationName(rateCode),
+        rateCode,
+        count: data.count,
+        consumption: data.consumption,
+        revenue: data.revenue,
+      }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 10);
-  }, [metricsByClassification, selectedMonth]);
+  }, [filteredAccounts, selectedMonth]);
 
   // Categorize classifications
   const classificationGroups = useMemo(() => {
-    if (!metricsByClassification || !selectedMonth) {
-      return { residential: 0, commercial: 0, industrial: 0, government: 0, other: 0 };
-    }
-
     const groups = { residential: 0, commercial: 0, industrial: 0, government: 0, other: 0 };
     const residentialCodes = ['01', '02', '02A'];
     const commercialCodes = ['03', '04', '06', '07', '08', '10', '11', '12', '18', '19'];
@@ -100,28 +97,27 @@ export default function StatusClassificationAnalytics({ selectedMonth }) {
     const institutionalCodes = ['14', '15', '15A', '16', '17'];
     const otherCodes = ['13', '20', '21'];
 
-    for (const [rateCode, monthData] of Object.entries(metricsByClassification)) {
-      const data = monthData[selectedMonth];
-      if (!data) continue;
+    for (const account of filteredAccounts) {
+      if (account.datasetId !== selectedMonth || !account.rateCode) continue;
 
-      const count = data.count;
+      const rateCode = account.rateCode;
       if (residentialCodes.includes(rateCode)) {
-        groups.residential += count;
+        groups.residential += 1;
       } else if (commercialCodes.includes(rateCode)) {
-        groups.commercial += count;
+        groups.commercial += 1;
       } else if (industrialCodes.includes(rateCode)) {
-        groups.industrial += count;
+        groups.industrial += 1;
       } else if (governmentCodes.includes(rateCode) || institutionalCodes.includes(rateCode)) {
-        groups.government += count;
+        groups.government += 1;
       } else if (otherCodes.includes(rateCode)) {
-        groups.other += count;
+        groups.other += 1;
       } else {
-        groups.other += count;
+        groups.other += 1;
       }
     }
 
     return groups;
-  }, [metricsByClassification, selectedMonth]);
+  }, [filteredAccounts, selectedMonth]);
 
   // Format classification groups for chart
   const classificationGroupsChart = useMemo(() => {
@@ -193,8 +189,8 @@ export default function StatusClassificationAnalytics({ selectedMonth }) {
           <h3 className="text-lg font-semibold text-white mb-4">
             Account Status Distribution
           </h3>
-          {isLoadingStatus ? (
-            <LoadingChart />
+          {statusDistribution.length === 0 ? (
+            <div className="h-64 flex items-center justify-center text-slate-400">No data available</div>
           ) : (
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
@@ -234,8 +230,8 @@ export default function StatusClassificationAnalytics({ selectedMonth }) {
           <h3 className="text-lg font-semibold text-white mb-4">
             Classification Group Distribution
           </h3>
-          {isLoadingClassification ? (
-            <LoadingChart />
+          {classificationGroupsChart.length === 0 ? (
+            <div className="h-64 flex items-center justify-center text-slate-400">No data available</div>
           ) : (
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={classificationGroupsChart}>
@@ -271,8 +267,8 @@ export default function StatusClassificationAnalytics({ selectedMonth }) {
         <h3 className="text-lg font-semibold text-white mb-4">
           Top 10 Classifications by Account Count
         </h3>
-        {isLoadingClassification ? (
-          <LoadingChart />
+        {classificationData.length === 0 ? (
+          <div className="text-slate-400">No data available</div>
         ) : (
           <div className="space-y-2">
             {classificationData.map((item, index) => (
