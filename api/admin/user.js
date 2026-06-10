@@ -1,4 +1,4 @@
-import { verifyFirebaseIdToken, isAdminEmail } from '../lib/firebaseAuth.js';
+import { verifyFirebaseIdToken, isAdminUser } from '../lib/firebaseAuth.js';
 import { findUserById, updateUserRoleById, banUserById, deleteUserById } from '../lib/userStore.js';
 
 const sendJson = (res, status, body) => {
@@ -21,7 +21,7 @@ export default async function handler(req, res) {
     return sendJson(res, 401, { error: 'invalid_token', message: error.message });
   }
 
-  if (!isAdminEmail(payload.email)) {
+  if (!isAdminUser({ email: payload.email, uid: payload.uid || payload.sub })) {
     return sendJson(res, 403, { error: 'forbidden' });
   }
 
@@ -48,11 +48,11 @@ export default async function handler(req, res) {
       return sendJson(res, 404, { error: 'user_not_found' });
     }
 
-    if (targetUser.email === payload.email) {
+    if (targetUser.email === payload.email || targetUser.id === (payload.uid || payload.sub)) {
       return sendJson(res, 400, { error: 'cannot_delete_self' });
     }
 
-    if (isAdminEmail(targetUser.email)) {
+    if (isAdminUser({ email: targetUser.email, uid: targetUser.id })) {
       return sendJson(res, 400, { error: 'cannot_modify_admin' });
     }
 
@@ -73,11 +73,11 @@ export default async function handler(req, res) {
     return sendJson(res, 404, { error: 'user_not_found' });
   }
 
-  if (targetUser.email === payload.email) {
+  if (targetUser.email === payload.email || targetUser.id === (payload.uid || payload.sub)) {
     return sendJson(res, 400, { error: 'cannot_modify_self' });
   }
 
-  if (isAdminEmail(targetUser.email)) {
+  if (isAdminUser({ email: targetUser.email, uid: targetUser.id })) {
     return sendJson(res, 400, { error: 'cannot_modify_admin' });
   }
 

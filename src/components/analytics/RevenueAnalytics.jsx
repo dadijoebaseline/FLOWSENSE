@@ -14,6 +14,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { getClassificationName } from '../../lib/rateCodeMap';
+import { useSharedFilters } from '../../lib/FilterContext';
 
 const COLORS = ['#10b981', '#ef4444', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899'];
 
@@ -38,6 +39,7 @@ function MetricBox({ label, value, unit = '' }) {
 }
 
 export default function RevenueAnalytics({ selectedMonth, filteredAccounts = [] }) {
+  const { toggleRoute, toggleClassification } = useSharedFilters();
   // Prepare revenue by route chart data for selected month from filtered accounts
   const revenueRouteChartData = useMemo(() => {
     const routeMap = {};
@@ -185,7 +187,13 @@ export default function RevenueAnalytics({ selectedMonth, filteredAccounts = [] 
                     })}`,
                   ]}
                 />
-                <Bar dataKey="revenue" fill="#10b981" radius={[8, 8, 0, 0]} />
+                <Bar
+                  dataKey="revenue"
+                  fill="#10b981"
+                  radius={[8, 8, 0, 0]}
+                  onClick={(data) => toggleRoute(data.name)}
+                  cursor="pointer"
+                />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -218,6 +226,8 @@ export default function RevenueAnalytics({ selectedMonth, filteredAccounts = [] 
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="revenue"
+                  onClick={(entry) => toggleClassification(entry.rateCode)}
+                  cursor="pointer"
                 >
                   {revenueClassificationChartData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />

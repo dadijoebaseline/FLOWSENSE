@@ -505,4 +505,241 @@ export const staticDataService = {
       avgRevenuePerAccount: totalAccounts > 0 ? Math.round((totalRevenue / totalAccounts) * 100) / 100 : 0,
     };
   },
+
+  /**
+   * Get all water accounts across all datasets
+   * @returns {Promise<Array>} Array of all account objects
+   */
+  async getAllAccounts() {
+    return loadAllAccounts();
+  },
+
+  /**
+   * Calculate statistical insights from filtered accounts
+   * Generates rank-based, trend, anomaly, and comparative observations
+   * @param {Array} accounts - Filtered account list
+   * @param {Object} filters - Active filters for context
+   * @param {string} selectedMonth - Currently selected month
+   * @returns {Promise<Array>} Array of insight objects
+   */
+  async generateInsights(accounts, filters = {}, selectedMonth = '2026-05') {
+    if (!accounts || accounts.length === 0) {
+      return [];
+    }
+
+    const insights = [];
+
+    // 1. RANK-BASED INSIGHTS
+    rankInsights = await this._generateRankInsights(accounts, selectedMonth);
+    insights.push(...rankInsights);
+
+    // 2. TREND INSIGHTS (if multiple months available)
+    const allAccounts = await loadAllAccounts();
+    trendInsights = await this._generateTrendInsights(accounts, selectedMonth, allAccounts);
+    insights.push(...trendInsights);
+
+    // 3. ANOMALY INSIGHTS
+    anomalyInsights = await this._generateAnomalyInsights(accounts);
+    insights.push(...anomalyInsights);
+
+    // 4. COMPARATIVE INSIGHTS
+    comparativeInsights = await this._generateComparativeInsights(accounts);
+    insights.push(...comparativeInsights);
+
+    // Return top 3 insights by relevance
+    return insights
+      .sort((a, b) => (b.confidence || 0) - (a.confidence || 0))
+      .slice(0, 3);
+  },
+
+  /**
+   * Generate rank-based insights (top performers)
+   * @private
+   */
+  async _generateRankInsights(accounts, selectedMonth) {
+    const insights = [];
+    if (accounts.length === 0) return insights;
+
+    // Top consumer by area
+    const byArea = {};
+    const avgConsumption = accounts.reduce((sum, a) => sum + (Number(a.cumUsed) || 0), 0) / accounts.length;
+    
+    for (const account of accounts) {
+      if (!account.area) continue;
+      if (!byArea[account.area]) {
+        byArea[account.area] = { total: 0, count: 0, name: account.area };
+      }
+      byArea[account.area].total += Number(account.cumUsed) || 0;
+      byArea[account.area].count += 1;
+    }
+
+    const areaRanks = Object.values(byArea)
+      .map(a => ({ ...a, avg: a.total / a.count }))
+      .sort((a, b) => b.total - a.total);
+
+    if (areaRanks.length > 0) {
+      const top = areaRanks[0];
+      const variance = ((top.total / avgConsumption - 1) * 100).toFixed(0);
+      insights.push({
+        type: 'rank',
+        icon: '📊',
+        title: `${top.name} leads consumption`,
+        description: `Area ${top.name} ranks #1 with ${Math.round(top.total).toLocaleString()} cu.m. (${variance > 0 ? '↑' : ''}${variance}% vs avg)`,
+        confidence: 0.95,
+        color: 'bg-blue-50',
+      });
+    }
+
+    // Top revenue generator
+    const byRoute = {};
+    const avgRevenue = accounts.reduce((sum, a) => sum + (Number(a.billAmount) || 0), 0) / accounts.length;
+    
+    for (const account of accounts) {
+      if (!account.bookNo) continue;
+      if (!byRoute[account.bookNo]) {
+        byRoute[account.bookNo] = { total: 0, count: 0, name: account.bookNo };
+      }
+      byRoute[account.bookNo].total += Number(account.billAmount) || 0;
+      byRoute[account.bookNo].count += 1;
+    }
+
+    const routeRanks = Object.values(byRoute)
+      .map(r => ({ ...r, avg: r.total / r.count }))
+      .sort((a, b) => b.total - a.total);
+
+    if (routeRanks.length > 0) {
+      const top = routeRanks[0];
+      const variance = ((top.total / avgRevenue - 1) * 100).toFixed(0);
+      insights.push({
+        type: 'rank',
+        icon: '💰',
+        title: `Route ${top.name} revenue leader`,
+        description: `Route ${top.name} generates ₹${Math.round(top.total).toLocaleString()} (${variance > 0 ? '↑' : ''}${variance}% vs avg)`,
+        confidence: 0.9,
+        color: 'bg-green-50',
+      });
+    }
+
+    return insights;
+  },
+
+  /**
+   * Generate trend insights (month-over-month comparisons)
+   * @private
+   */
+  async _generateTrendInsights(accounts, selectedMonth, allAccounts) {
+    const insights = [];
+    const months = this.getAvailableMonths().sort();
+    
+    if (months.length < 2) return insights;
+
+    // Get previous month
+    const selectedIdx = months.indexOf(selectedMonth);
+    if (selectedIdx <= 0) return insights;
+
+    const prevMonth = months[selectedIdx - 1];
+
+    // Calculate current and previous consumption
+    const currentConsumption = accounts.reduce((sum, a) => sum + (Number(a.cumUsed) || 0), 0);
+    const prevAccounts = allAccounts.filter(a => a.datasetId === prevMonth);
+    const prevConsumption = prevAccounts.reduce((sum, a) => sum + (Number(a.cumUsed) || 0), 0);
+
+    if (prevConsumption > 0) {
+      const change = ((currentConsumption / prevConsumption - 1) * 100).toFixed(1);
+      const changeNum = parseFloat(change);
+      
+      if (Math.abs(changeNum) > 5) {
+        insights.push({
+          type: 'trend',
+          icon: changeNum > 0 ? '📈' : '📉',
+          title: `Consumption ${changeNum > 0 ? 'increased' : 'decreased'} MoM`,
+          description: `Total consumption ${changeNum > 0 ? 'increased' : 'decreased'} by ${Math.abs(change)}% (${Math.round(currentConsumption)} vs ${Math.round(prevConsumption)} cu.m.)`,
+          confidence: 0.85,
+          color: changeNum > 0 ? 'bg-amber-50' : 'bg-blue-50',
+        });
+      }
+    }
+
+    return insights;
+  },
+
+  /**
+   * Generate anomaly insights (statistical outliers)
+   * @private
+   */
+  async _generateAnomalyInsights(accounts) {
+    const insights = [];
+    if (accounts.length < 3) return insights;
+
+    // Calculate consumption statistics
+    const consumptions = accounts
+      .map(a => Number(a.cumUsed) || 0)
+      .sort((a, b) => a - b);
+
+    const mean = consumptions.reduce((a, b) => a + b, 0) / consumptions.length;
+    const variance = consumptions.reduce((sum, x) => sum + Math.pow(x - mean, 2), 0) / consumptions.length;
+    const stdDev = Math.sqrt(variance);
+
+    // Find outliers (>1.5 sigma)
+    const highOutliers = accounts.filter(a => {
+      const consumption = Number(a.cumUsed) || 0;
+      return consumption > mean + 1.5 * stdDev && consumption !== mean;
+    });
+
+    const lowOutliers = accounts.filter(a => {
+      const consumption = Number(a.cumUsed) || 0;
+      return consumption < mean - 1.5 * stdDev && consumption > 0;
+    });
+
+    if (highOutliers.length > 0) {
+      insights.push({
+        type: 'anomaly',
+        icon: '⚠️',
+        title: `${highOutliers.length} high consumption outliers`,
+        description: `${highOutliers.length} account(s) consuming significantly above average (>${(mean + 1.5 * stdDev).toFixed(0)} cu.m.)`,
+        confidence: 0.8,
+        color: 'bg-red-50',
+      });
+    }
+
+    return insights;
+  },
+
+  /**
+   * Generate comparative insights (category comparisons)
+   * @private
+   */
+  async _generateComparativeInsights(accounts) {
+    const insights = [];
+    if (accounts.length < 5) return insights;
+
+    // Compare ACTIVE vs DISCONNECTED consumption
+    const byStatus = {};
+    for (const account of accounts) {
+      const status = account.status || 'UNKNOWN';
+      if (!byStatus[status]) {
+        byStatus[status] = { consumption: 0, count: 0, revenue: 0 };
+      }
+      byStatus[status].consumption += Number(account.cumUsed) || 0;
+      byStatus[status].count += 1;
+      byStatus[status].revenue += Number(account.billAmount) || 0;
+    }
+
+    if (byStatus.ACTIVE && byStatus.DISCONNECTED) {
+      const activeAvg = byStatus.ACTIVE.consumption / byStatus.ACTIVE.count;
+      const disconnectedAvg = byStatus.DISCONNECTED.consumption / byStatus.DISCONNECTED.count;
+      const ratio = (activeAvg / disconnectedAvg).toFixed(2);
+
+      insights.push({
+        type: 'comparative',
+        icon: '📋',
+        title: `Active accounts use ${ratio}x more water`,
+        description: `ACTIVE accounts average ${activeAvg.toFixed(0)} cu.m., DISCONNECTED average ${disconnectedAvg.toFixed(0)} cu.m.`,
+        confidence: 0.75,
+        color: 'bg-indigo-50',
+      });
+    }
+
+    return insights;
+  },
 };

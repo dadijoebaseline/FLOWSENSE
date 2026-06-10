@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
@@ -17,12 +17,15 @@ import {
 import { staticDataService } from '../lib/staticDataService';
 import { getClassificationName } from '../lib/rateCodeMap';
 import { useSharedFilters } from '../lib/FilterContext';
-import ConsumptionAnalytics from '../components/analytics/ConsumptionAnalytics';
-import RevenueAnalytics from '../components/analytics/RevenueAnalytics';
-import AreaAnalytics from '../components/analytics/AreaAnalytics';
-import RouteAnalytics from '../components/analytics/RouteAnalytics';
-import StatusClassificationAnalytics from '../components/analytics/StatusClassificationAnalytics';
+import SmartInsights from '../components/analytics/SmartInsights';
 import { FilterPanel } from '../components/analytics/FilterPanel';
+
+// Lazy-load analytics modules for code-splitting
+const ConsumptionAnalytics = lazy(() => import('../components/analytics/ConsumptionAnalytics'));
+const RevenueAnalytics = lazy(() => import('../components/analytics/RevenueAnalytics'));
+const AreaAnalytics = lazy(() => import('../components/analytics/AreaAnalytics'));
+const RouteAnalytics = lazy(() => import('../components/analytics/RouteAnalytics'));
+const StatusClassificationAnalytics = lazy(() => import('../components/analytics/StatusClassificationAnalytics'));
 
 const TABS = [
   { id: 'kpi', label: 'Dashboard', icon: '📊' },
@@ -32,6 +35,24 @@ const TABS = [
   { id: 'route', label: 'Route Efficiency', icon: '🛣️' },
   { id: 'status', label: 'Status & Classification', icon: '📋' },
 ];
+
+// Suspense loading fallback for lazy-loaded modules
+function ModuleLoadingFallback() {
+  return (
+    <motion.div
+      animate={{ opacity: [0.5, 1, 0.5] }}
+      transition={{ duration: 1.5, repeat: Infinity }}
+      className="grid grid-cols-1 md:grid-cols-2 gap-6"
+    >
+      {[1, 2, 3, 4].map((i) => (
+        <div
+          key={i}
+          className="h-96 bg-slate-800/50 rounded-lg border border-slate-700 animate-pulse"
+        />
+      ))}
+    </motion.div>
+  );
+}
 
 function KPICard({ icon: Icon, value, label, color, loading, decimals = 0 }) {
   return (
@@ -247,6 +268,14 @@ export default function Analytics() {
         totalCount={allAccounts.length}
       />
 
+      {/* Smart Insights Panel */}
+      <SmartInsights
+        filteredAccounts={filteredAccounts}
+        filters={filters}
+        selectedMonth={selectedMonth || monthOptions[monthOptions.length - 1]}
+        isLoading={false}
+      />
+
       {/* Tab Navigation */}
       <motion.div
         initial={{ opacity: 0 }}
@@ -311,27 +340,37 @@ export default function Analytics() {
 
         {/* Consumption Analytics Tab */}
         {activeTab === 'consumption' && selectedMonth && (
-          <ConsumptionAnalytics selectedMonth={selectedMonth} filteredAccounts={filteredAccounts} />
+          <Suspense fallback={<ModuleLoadingFallback />}>
+            <ConsumptionAnalytics selectedMonth={selectedMonth} filteredAccounts={filteredAccounts} />
+          </Suspense>
         )}
 
         {/* Revenue Analytics Tab */}
         {activeTab === 'revenue' && selectedMonth && (
-          <RevenueAnalytics selectedMonth={selectedMonth} filteredAccounts={filteredAccounts} />
+          <Suspense fallback={<ModuleLoadingFallback />}>
+            <RevenueAnalytics selectedMonth={selectedMonth} filteredAccounts={filteredAccounts} />
+          </Suspense>
         )}
 
         {/* Area Analytics Tab */}
         {activeTab === 'area' && selectedMonth && (
-          <AreaAnalytics selectedMonth={selectedMonth} filteredAccounts={filteredAccounts} />
+          <Suspense fallback={<ModuleLoadingFallback />}>
+            <AreaAnalytics selectedMonth={selectedMonth} filteredAccounts={filteredAccounts} />
+          </Suspense>
         )}
 
         {/* Route Analytics Tab */}
         {activeTab === 'route' && selectedMonth && (
-          <RouteAnalytics selectedMonth={selectedMonth} filteredAccounts={filteredAccounts} />
+          <Suspense fallback={<ModuleLoadingFallback />}>
+            <RouteAnalytics selectedMonth={selectedMonth} filteredAccounts={filteredAccounts} />
+          </Suspense>
         )}
 
         {/* Status & Classification Tab */}
         {activeTab === 'status' && selectedMonth && (
-          <StatusClassificationAnalytics selectedMonth={selectedMonth} filteredAccounts={filteredAccounts} />
+          <Suspense fallback={<ModuleLoadingFallback />}>
+            <StatusClassificationAnalytics selectedMonth={selectedMonth} filteredAccounts={filteredAccounts} />
+          </Suspense>
         )}
       </motion.div>
     </div>

@@ -78,6 +78,9 @@ export default function MapView() {
       .slice(0, 8);
   }, [anomalies, rawSearchInput]);
 
+  const getAnomalyKey = (anomaly) =>
+    anomaly.accountNumber || anomaly.accountId || anomaly.id || anomaly.meterNo || anomaly.name || '';
+
   const filtered = useMemo(() => {
     const tokens = searchTokens(rawSearchInput);
     const typeFiltered = typeFilter === 'all'
@@ -138,7 +141,7 @@ export default function MapView() {
           </SelectContent>
         </Select>
       </motion.div>
-      <div className="relative max-w-xl">
+      <div className="relative max-w-xl z-[9999]">
         <div className="relative">
           <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
           <input
@@ -148,7 +151,7 @@ export default function MapView() {
             onKeyDown={e => {
               if (e.key === 'Enter' && suggested.length > 0) {
                 const item = suggested[0];
-                const key = item.accountNumber || item.meterNo || item.name;
+                const key = getAnomalyKey(item);
                 const value = item.name || item.accountNumber || item.meterNo || item.address || '';
                 setSelectedAnomalyKey(key);
                 setRawSearchInput(value);
@@ -160,19 +163,20 @@ export default function MapView() {
           />
         </div>
         {rawSearchInput.trim().length > 0 && suggested.length > 0 && (
-          <div className="absolute left-0 right-0 z-20 mt-2 max-h-72 overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/95 shadow-2xl shadow-black/30 backdrop-blur-xl">
+          <div className="absolute left-0 right-0 z-[9999] mt-2 max-h-72 overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/95 shadow-2xl shadow-black/30 backdrop-blur-xl">
             {suggested.map((anomaly, index) => {
               const baseKey = anomaly.accountNumber || anomaly.meterNo || anomaly.name || anomaly.address || 'anomaly';
               const key = `${baseKey}-${index}`;
               const title = anomaly.name || anomaly.accountNumber || anomaly.meterNo || 'Unknown';
               const subtitle = [anomaly.accountNumber, anomaly.meterNo].filter(Boolean).join(' • ');
+              const highlightKey = getAnomalyKey(anomaly);
               return (
                 <button
                   key={key}
                   type="button"
                   onClick={() => {
                     const value = anomaly.name || anomaly.accountNumber || anomaly.meterNo || anomaly.address || '';
-                    setSelectedAnomalyKey(key);
+                    setSelectedAnomalyKey(highlightKey);
                     setRawSearchInput(value);
                     setDebouncedSearchQuery(value.trim());
                   }}
@@ -217,6 +221,7 @@ export default function MapView() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2, duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
+        className="relative z-10"
       >
         <AnomalyMap anomalies={filtered} height="calc(100vh - 300px)" highlightKey={selectedAnomalyKey} />
       </motion.div>

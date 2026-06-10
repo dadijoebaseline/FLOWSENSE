@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -7,6 +7,7 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
 import { ANOMALY_LABELS } from '@/lib/anomalyDetection';
 import { getStatusBadgeClass } from '@/lib/utils';
 import { staticDataService } from '@/lib/staticDataService';
+import { useSharedFilters } from '@/lib/FilterContext';
 import StatsCard from '@/components/dashboard/StatsCard';
 import { AnomalyPieChart, AnomalySeverityChart } from '@/components/dashboard/AnomalyChart';
 import RecentAnomalies from '@/components/dashboard/RecentAnomalies';
@@ -18,6 +19,7 @@ export default function Dashboard() {
   const outletContext = useOutletContext();
   const role = outletContext?.role || 'viewer';
   const navigate = useNavigate();
+  const { filters, isFilterActive, applyFilters } = useSharedFilters();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedAnomaly, setSelectedAnomaly] = useState(null);
@@ -81,10 +83,29 @@ export default function Dashboard() {
     queryFn: () => staticDataService.getDatasets(),
   });
 
-  const suddenHigh = anomalies.filter(a => a.anomalyType === 'sudden_high').length;
-  const zeroCons = anomalies.filter(a => a.anomalyType === 'zero_consumption').length;
-  const suddenDown = anomalies.filter(a => a.anomalyType === 'sudden_down').length;
-  const critical = anomalies.filter(a => a.severity === 'critical').length;
+  const { data: allAccounts = [] } = useQuery({
+    queryKey: ['accounts'],
+    queryFn: () => staticDataService.getAllAccounts(),
+  });
+
+  // Apply shared filters to anomalies based on filtered accounts
+  const filteredAnomalies = useMemo(() => {
+    if (!isFilterActive || allAccounts.length === 0) {
+      return anomalies;
+    }
+
+    const filtered = applyFilters(allAccounts);
+    const filteredAccountIds = new Set(filtered.map((acc) => acc.accountId));
+
+    return anomalies.filter((anomaly) =>
+      filteredAccountIds.has(anomaly.accountId || anomaly.accountNumber)
+    );
+  }, [anomalies, allAccounts, filters, isFilterActive, applyFilters]);
+
+  const suddenHigh = filteredAnomalies.filter(a => a.anomalyType === 'sudden_high').length;
+  const zeroCons = filteredAnomalies.filter(a => a.anomalyType === 'zero_consumption').length;
+  const suddenDown = filteredAnomalies.filter(a => a.anomalyType === 'sudden_down').length;
+  const critical = filteredAnomalies.filter(a => a.severity === 'critical').length;
 
   if (isLoading) {
     return (
@@ -123,7 +144,7 @@ export default function Dashboard() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatsCard title="Total Anomalies" value={anomalies.length} icon={AlertTriangle} color="red" delay={0} subtitle={`${critical} critical`} onClick={() => navigate('/anomalies')} />
+        <StatsCard title="Total Anomalies" value={filteredAnomalies.length} icon={AlertTriangle} color="red" delay={0} subtitle={`${critical} critical`} onClick={() => navigate('/anomalies')} />
         <StatsCard title="Sudden High" value={suddenHigh} icon={ArrowUpRight} color="red" delay={0.07} subtitle="≥30% increase" onClick={() => navigate('/anomalies?type=sudden_high')} />
         <StatsCard title="Zero Usage" value={zeroCons} icon={Droplets} color="amber" delay={0.14} subtitle="No consumption" onClick={() => navigate('/anomalies?type=zero_consumption')} />
         <StatsCard title="Sudden Down" value={suddenDown} icon={ArrowDownRight} color="blue" delay={0.21} subtitle="≥30% decrease" onClick={() => navigate('/anomalies?type=sudden_down')} />
@@ -131,8 +152,8 @@ export default function Dashboard() {
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <AnomalyPieChart anomalies={anomalies} />
-        <AnomalySeverityChart anomalies={anomalies} />
+        <AnomalyPieChart anomalies={filteredAnomalies} />
+        <AnomalySeverityChart anomalies={filteredAnomalies} />
       </div>
 
       {/* Map + Recent */}
@@ -145,16 +166,16 @@ export default function Dashboard() {
         >
           <div className="mb-3 flex items-center justify-between">
             <h3 className="text-sm font-semibold text-white font-space">Anomaly Map</h3>
-            <span className="text-xs text-slate-500">{anomalies.filter(a => a.latitude).length} plotted</span>
+            <span className="text-xs text-slate-500">{filteredAnomalies.filter(a => a.latitude).length} plotted</span>
           </div>
           <div className="flex-1">
-            <AnomalyMap anomalies={anomalies} height="h-full" />
+            <AnomalyMap anomalies={filteredAnomalies} height="h-80 md:h-[420px] lg:h-full" />
           </div>
         </motion.div>
         <div className="lg:col-span-2 flex flex-col h-full">
           <RecentAnomalies
             className="h-full"
-            anomalies={anomalies.map(a => ({ ...a, _onClick: () => window.dispatchEvent(new CustomEvent('anomaly:open', { detail: a })) }))}
+            anomalies={filteredAnomalies.map(a => ({ ...a, _onClick: () => window.dispatchEvent(new CustomEvent('anomaly:open', { detail: a })) }))}
           />
         </div>
       </div>

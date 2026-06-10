@@ -19,6 +19,8 @@ Deliver a fully static, Vercel-friendly anomaly detection experience using only 
 - ✓ Dashboard map defaults to clustered markers with mobile-visible responsive height — current implementation
 - ✓ Map search suggestions overlay above the map and selecting a suggestion zooms to the selected anomaly — current implementation
 - ✓ React duplicate key warnings fixed for search suggestions and anomaly table rows — current implementation
+- ✓ Latest-month anomaly filtering retains only the newest monthly anomaly per account — current implementation
+- ✓ Map marker deduplication now uses stable account identity instead of lat/long coordinates — current implementation
 - ✓ Vercel deployment helper script available at `.bat/deploy-vercel.bat` — current implementation
 
 ### Active
@@ -40,6 +42,7 @@ Deliver a fully static, Vercel-friendly anomaly detection experience using only 
 This project was originally built on Base44 with a cloud database backend. It has been converted into a static React + Vite application that uses local GeoJSON APIs via `fetch('/data/<month>.geojson')`. The focus is on making the app deployable on static hosts like Vercel.
 
 Recent refinement work has adjusted anomaly detection so `sudden_high` and `sudden_down` now require both a relative threshold and a meaningful absolute `cumUsed` shift, and `sudden_down` is only reported for active accounts.
+The anomaly service now filters stale older monthly anomalies and retains only the latest available anomaly per account. Map marker deduplication is based on account identity, which prevents duplicate markers for the same account across overlapping coordinates.
 The anomaly list now supports exporting filtered records to CSV for Excel, the dashboard map defaults to clustered markers with a mobile-friendly height setting, and map search suggestions now render above the map with click-to-zoom behavior for selected accounts.
 
 Note: the former Upload route has been replaced with an Analytics placeholder page. There is currently no runtime upload or dataset ingestion workflow in the static app.

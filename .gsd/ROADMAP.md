@@ -69,7 +69,7 @@ Plans:
 - [x] 02.5-02: Build 5 analytics modules with consumption/revenue by dimensions
 - [x] 02.5-03: Implement advanced multi-dimensional filter system
 - [x] 02.5-04: Cross-filter interaction and map synchronization
-- [ ] 02.5-05: Smart insights engine and performance optimization
+- [x] 02.5-05: Smart insights engine and performance optimization
 
 **Implementation details**: See `.gsd/ANALYTICS-PLAN.md`
 
@@ -93,7 +93,7 @@ Plans:
 |-------|----------------|--------|
 | Phase 1: Static Conversion | 3/3 | ✅ Complete |
 | Phase 2: Static Data Experience | 0/3 | Not started |
-| Phase 2.5: Analytics Experience | 4/5 | 🔄 In progress |
+| Phase 2.5: Analytics Experience | 5/5 | ✅ Complete |
 | Phase 3: Deployment & Documentation | 1/2 | In progress |
 
 ## Timeline Estimate

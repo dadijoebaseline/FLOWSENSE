@@ -12,6 +12,7 @@ import {
   ScatterChart,
   Scatter,
 } from 'recharts';
+import { useSharedFilters } from '../../lib/FilterContext';
 
 function LoadingChart() {
   return (
@@ -34,6 +35,7 @@ function MetricBox({ label, value, unit = '' }) {
 }
 
 export default function RouteAnalytics({ selectedMonth, filteredAccounts = [] }) {
+  const { toggleRoute } = useSharedFilters();
   // Prepare route efficiency data for selected month from filtered accounts
   const routeEfficiencyData = useMemo(() => {
     const routeMap = {};
@@ -191,7 +193,13 @@ export default function RouteAnalytics({ selectedMonth, filteredAccounts = [] })
                     return [value, name];
                   }}
                 />
-                <Bar dataKey="revenue" fill="#f59e0b" radius={[8, 8, 0, 0]} />
+                <Bar
+                  dataKey="revenue"
+                  fill="#f59e0b"
+                  radius={[8, 8, 0, 0]}
+                  onClick={(data) => toggleRoute(data.name)}
+                  cursor="pointer"
+                />
               </BarChart>
             </ResponsiveContainer>
           )}

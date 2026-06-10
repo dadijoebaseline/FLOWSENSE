@@ -1,17 +1,29 @@
 import admin from 'firebase-admin';
 
 const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-const projectId = process.env.FIREBASE_PROJECT_ID;
+const serviceAccount = serviceAccountKey ? JSON.parse(serviceAccountKey) : null;
+const projectId =
+  process.env.FIREBASE_PROJECT_ID ||
+  process.env.VITE_FIREBASE_PROJECT_ID ||
+  serviceAccount?.project_id;
 
 if (!admin.apps.length) {
-  const credential = serviceAccountKey
-    ? admin.credential.cert(JSON.parse(serviceAccountKey))
+  if (!serviceAccount && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    throw new Error(
+      'Firebase Admin credentials are missing. Set FIREBASE_SERVICE_ACCOUNT_KEY or GOOGLE_APPLICATION_CREDENTIALS in your environment.'
+    );
+  }
+
+  const credential = serviceAccount
+    ? admin.credential.cert(serviceAccount)
     : admin.credential.applicationDefault();
 
-  admin.initializeApp({
-    credential,
-    projectId,
-  });
+  const initOptions = { credential };
+  if (projectId) {
+    initOptions.projectId = projectId;
+  }
+
+  admin.initializeApp(initOptions);
 }
 
 export const authAdmin = admin.auth();

@@ -16,6 +16,7 @@ import {
   Legend,
 } from 'recharts';
 import { getClassificationName } from '../../lib/rateCodeMap';
+import { useSharedFilters } from '../../lib/FilterContext';
 
 const COLORS = ['#3b82f6', '#10b981', '#ef4444', '#f59e0b', '#8b5cf6', '#ec4899'];
 const STATUS_COLORS = { ACTIVE: '#10b981', DISCONNECTED: '#ef4444' };
@@ -41,6 +42,7 @@ function MetricBox({ label, value, unit = '' }) {
 }
 
 export default function StatusClassificationAnalytics({ selectedMonth, filteredAccounts = [] }) {
+  const { toggleStatus, toggleClassification } = useSharedFilters();
   // Prepare status distribution data from filtered accounts
   const statusDistribution = useMemo(() => {
     const statusMap = {};
@@ -205,6 +207,8 @@ export default function StatusClassificationAnalytics({ selectedMonth, filteredA
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="count"
+                  onClick={(entry) => toggleStatus(entry.name)}
+                  cursor="pointer"
                 >
                   {statusDistribution.map((entry, index) => (
                     <Cell
@@ -246,7 +250,13 @@ export default function StatusClassificationAnalytics({ selectedMonth, filteredA
                   }}
                   formatter={(value) => [value, 'Accounts']}
                 />
-                <Bar dataKey="count" fill="#3b82f6" radius={[8, 8, 0, 0]} />
+                <Bar
+                  dataKey="count"
+                  fill="#3b82f6"
+                  radius={[8, 8, 0, 0]}
+                  onClick={(data) => toggleClassification(data.rateCode)}
+                  cursor="pointer"
+                />
               </BarChart>
             </ResponsiveContainer>
           )}

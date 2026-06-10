@@ -1,0 +1,483 @@
+{
+  "project": {
+    "name": "Advanced GIS Analytics Dashboard",
+    "type": "Static Vercel Web App",
+    "deployment": "Vercel Static Hosting",
+    "data_source": "GeoJSON Files",
+    "completed_features": [
+      "✅ Interactive GIS Map (Dashboard & MapView)",
+      "✅ GeoJSON Layer Rendering",
+      "✅ Account Visualization with markers",
+      "✅ Anomaly-focused KPI Cards (Total, Sudden High, Zero Usage, Sudden Down)",
+      "✅ Anomaly Distribution Pie Chart",
+      "✅ Anomaly Severity Bar Chart",
+      "✅ 3-Month Consumption Trend Chart",
+      "✅ Recent Anomalies List",
+      "✅ Account Details Dialog",
+      "✅ Anomaly Table with filtering by type"
+    ]
+  },
+  "objective": {
+    "primary_goal": "Build a comprehensive enterprise-grade Analytics page with multi-dimensional analysis (area, route, classification, status) aggregated by metrics (consumption, revenue) across temporal periods (month, year).",
+    "requirements": [
+      "TEMPORAL ANALYSIS: Consumption and revenue aggregations by month and year",
+      "DIMENSIONAL BREAKDOWN: Analyze each dimension (area, bookNo, rateCode, status) separately and in combination",
+      "Consumption metrics by dimension (total, average, min, max) per month/year",
+      "Revenue metrics by dimension (total, average, min, max) per month/year",
+      "ADVANCED FILTERING: Custom multi-filter combinations",
+      "Example filters: All ACTIVE status per area, All ACTIVE+ratecode 01 per bookNo, All rateCode Residential per area, etc.",
+      "Filter results show consumption and revenue for matching records by month/year",
+      "Cross-dimensional filtering (apply filters across area, bookNo, rateCode, status simultaneously)",
+      "Range filtering: consumption ranges, revenue ranges per dimension",
+      "Smart insights with trend detection across months/years",
+      "Dashboard map synchronization (bidirectional filtering)"
+    ]
+  },
+  "dataset": {
+    "table": "qgis_main (from GeoJSON)",
+    "properties": {
+      "area": "Location or service area of water meter",
+      "status": "Account status: ACTIVE or DISCONNECTED",
+      "bookNo": "Billing route or rotation number",
+      "rateCode": "Customer classification: Residential or Commercial",
+      "cumUsed": "Monthly water consumption (prsReading - prvReading)",
+      "billAmount": "Billing amount or revenue"
+    }
+  },
+  "analytics_route": {
+    "route_name": "Analytics",
+    "status": "NOT STARTED - Currently a placeholder",
+    "architecture": {
+      "mode": "Client-side analytics engine",
+      "processing": [
+        "Local GeoJSON aggregation using staticDataService",
+        "Memoized computations via React.useMemo",
+        "Debounced filter updates (300ms) for performance",
+        "Lazy-loaded chart components (Suspense/React.lazy)",
+        "Dynamic filtering across multiple dimensions"
+      ]
+    },
+    "layout": {
+      "sections": [
+        "Executive KPI Cards (consumption, revenue, accounts, status metrics)",
+        "Consumption Analytics",
+        "Revenue Analytics",
+        "Area Analytics",
+        "Route Analytics",
+        "Status Analytics",
+        "Classification Analytics",
+        "Smart Insights Panel"
+      ]
+    }
+  },
+  "map_integration": {
+    "existing_map": true,
+    "status": "NOT STARTED",
+    "decision": "BIDIRECTIONAL SYNC - Click Analytics chart filters map AND map selection propagates to Analytics",
+    "requirements": [
+      "Synchronize analytics charts with Dashboard map (bidirectional)",
+      "Cross-filtering between Analytics charts and Dashboard map",
+      "Dynamic marker filtering on map based on Analytics filter state"
+    ],
+    "interactive_behaviors": [
+      {
+        "action": "Click area consumption chart",
+        "result": "Dashboard map filters to show only that area's accounts"
+      },
+      {
+        "action": "Select status filter on Dashboard map",
+        "result": "Analytics charts update to reflect only selected status"
+      },
+      {
+        "action": "Multi-select route filter in Analytics",
+        "result": "Dashboard map highlights and shows only those routes' accounts"
+      },
+      {
+        "action": "Click chart bar (e.g., Revenue by Area)",
+        "result": "Analytics filters to that area; Dashboard map auto-zooms to area bounds"
+      }
+    ],
+    "state_management": "Shared filter context via React Context or Zustand between Dashboard and Analytics"
+  },
+  "executive_dashboard": {
+    "status": "NOT STARTED",
+    "note": "Anomaly KPIs exist on Dashboard; Analytics needs separate data-centric KPIs",
+    "kpi_cards_to_implement": [
+      "Total Accounts",
+      "Total ACTIVE Accounts",
+      "Total DISCONNECTED Accounts",
+      "Total Water Consumption",
+      "Total Revenue",
+      "Average Consumption per Account",
+      "Average Billing Amount per Account"
+    ],
+    "features": [
+      "Trend indicators (↑ ↓ for comparison with previous month)",
+      "Percentage change badges",
+      "Quick comparison metrics"
+    ]
+  },
+  "analytics_modules": {
+    "temporal_consumption_analytics": {
+      "status": "NOT STARTED",
+      "source": "cumUsed",
+      "temporal_grouping": ["By Month", "By Year"],
+      "dimensional_breakdown": [
+        "Total consumption by area per month/year",
+        "Total consumption by route (bookNo) per month/year",
+        "Total consumption by status (ACTIVE/DISCONNECTED) per month/year",
+        "Total consumption by classification (rateCode) per month/year"
+      ],
+      "charts_needed": [
+        "Monthly Consumption Trend (all accounts)",
+        "Consumption by Area (grouped by month)",
+        "Consumption by Route (grouped by month)",
+        "Consumption by Status (grouped by month)",
+        "Consumption by Classification (grouped by month)",
+        "Year-over-Year Comparison (same month different years)",
+        "Top 10 Consumers Leaderboard (per month)",
+        "Consumption Distribution by dimension"
+      ],
+      "metrics_to_calculate_per_dimension": [
+        "Total consumption (sum)",
+        "Average consumption (mean)",
+        "Min/max consumption",
+        "Median consumption",
+        "Consumption trend (month-over-month change %)"
+      ],
+      "filter_support": "By area, route, status, classification, and consumption range"
+    },
+    "temporal_revenue_analytics": {
+      "status": "NOT STARTED",
+      "source": "billAmount",
+      "temporal_grouping": ["By Month", "By Year"],
+      "dimensional_breakdown": [
+        "Total revenue by area per month/year",
+        "Total revenue by route (bookNo) per month/year",
+        "Total revenue by status (ACTIVE/DISCONNECTED) per month/year",
+        "Total revenue by classification (rateCode) per month/year"
+      ],
+      "charts_needed": [
+        "Monthly Revenue Trend (all accounts)",
+        "Revenue by Area (grouped by month)",
+        "Revenue by Route (grouped by month)",
+        "Revenue by Status (grouped by month)",
+        "Revenue by Classification (grouped by month)",
+        "Year-over-Year Comparison",
+        "Top 10 Revenue Accounts (per month)",
+        "Revenue Distribution by dimension"
+      ],
+      "metrics_to_calculate_per_dimension": [
+        "Total revenue (sum)",
+        "Average revenue per account",
+        "Min/max revenue",
+        "Median revenue",
+        "Revenue trend (month-over-month change %)",
+        "Revenue concentration (80/20 analysis)"
+      ],
+      "filter_support": "By area, route, status, classification, and revenue range"
+    },
+    "area_analytics": {
+      "status": "NOT STARTED",
+      "source": "area",
+      "temporal_support": "Monthly and yearly breakdowns",
+      "charts_needed": [
+        "Consumption & Revenue by Area per month",
+        "Accounts count per Area (by status breakdown)",
+        "ACTIVE vs DISCONNECTED by Area (Stacked Bar) per month",
+        "Area Performance Ranking (by consumption and revenue)",
+        "Status ratio per Area (Donut charts per area)",
+        "Classification breakdown per Area"
+      ],
+      "filter_combinations": [
+        "Single area: Show all metrics, consumption/revenue by status",
+        "Multiple areas: Compare metrics across selected areas",
+        "Area + Status: Show consumption/revenue for ACTIVE/DISCONNECTED in each area",
+        "Area + Classification: Show consumption/revenue by RateCode in each area"
+      ]
+    },
+    "route_analytics": {
+      "status": "NOT STARTED",
+      "source": "bookNo",
+      "temporal_support": "Monthly and yearly breakdowns",
+      "charts_needed": [
+        "Consumption & Revenue by Route per month",
+        "Accounts count per Route (by status breakdown)",
+        "Route Performance Ranking (by consumption/revenue/efficiency)",
+        "Status ratio per Route (Stacked Bar)",
+        "Classification breakdown per Route"
+      ],
+      "filter_combinations": [
+        "Single route: Show all metrics, consumption/revenue by status",
+        "Multiple routes: Compare metrics across selected routes",
+        "Route + Status: Show consumption/revenue for ACTIVE/DISCONNECTED in each route",
+        "Route + Classification: Show consumption/revenue by RateCode in each route"
+      ]
+    },
+    "status_analytics": {
+      "status": "NOT STARTED",
+      "source": "status",
+      "temporal_support": "Monthly and yearly breakdowns",
+      "charts_needed": [
+        "ACTIVE vs DISCONNECTED ratio per month (Donut)",
+        "Status by Area per month (Stacked Bar)",
+        "Status by Route per month (Stacked Bar)",
+        "Consumption/Revenue split by Status per month",
+        "Disconnection Rate Trend (month-over-month)",
+        "High-risk areas for disconnection"
+      ],
+      "filter_combinations": [
+        "Status only: Show ACTIVE or DISCONNECTED accounts metrics",
+        "Status + Area: Show status breakdown in specific areas",
+        "Status + Route: Show status breakdown in specific routes",
+        "Status + Classification: Show status breakdown by RateCode"
+      ]
+    },
+    "classification_analytics": {
+      "status": "NOT STARTED",
+      "source": "rateCode",
+      "temporal_support": "Monthly and yearly breakdowns",
+      "charts_needed": [
+        "Consumption by Classification (Residential vs Commercial, etc.) per month",
+        "Revenue by Classification per month",
+        "Accounts count by Classification (Donut/Bar)",
+        "Status breakdown per Classification (Stacked)",
+        "Area breakdown per Classification",
+        "Average consumption/revenue per Classification"
+      ],
+      "filter_combinations": [
+        "Classification only: Show all metrics for Residential OR Commercial",
+        "Classification + Area: Show classification breakdown in specific areas",
+        "Classification + Route: Show classification breakdown in specific routes",
+        "Classification + Status: Show status breakdown per classification"
+      ]
+    }
+  },
+  "smart_insights_engine": {
+    "status": "NOT STARTED",
+    "enabled": true,
+    "capabilities": [
+      "Rank-based insights (e.g., 'Area East ranks #1 in consumption')",
+      "Trend detection (e.g., 'Route B12 disconnection rate increased 15%')",
+      "Anomaly flagging (e.g., 'Area West has unusually low revenue - 80% below average')",
+      "Comparative analysis (e.g., 'Commercial accounts use 40% more water than residential')",
+      "Dynamic observations that update when filters change",
+      "Filter-aware insights (only analyzed selected subset)"
+    ],
+    "sample_outputs": [
+      "Area East leads consumption with 45,000 cu.m. (↑12% vs previous period).",
+      "Route B12 has highest disconnection rate at 12% - investigate.",
+      "Commercial accounts generate 63% of revenue despite 35% of accounts.",
+      "Zone West billing is 18% below area average - possible leak or meter issue.",
+      "Top 5 accounts account for 32% of total consumption."
+    ]
+  },
+  "filters": {
+    "status": "NOT STARTED",
+    "note": "Session-only filters (no URL persistence)",
+    "filter_types": [
+      "Dimension filters (can combine multiple dimensions)",
+      "Temporal filters (by month, by year)",
+      "Range filters (consumption & revenue ranges)"
+    ],
+    "supported_filters": [
+      "Area (multi-select dropdown)",
+      "Route/BookNo (multi-select dropdown)",
+      "Status (ACTIVE/DISCONNECTED multi-select)",
+      "Classification/RateCode (multi-select dropdown)",
+      "Consumption Range (slider dual-handle)",
+      "Billing Amount Range (slider dual-handle)"
+    ],
+    "filter_combinations": [
+      "All ACTIVE status per area",
+      "All ACTIVE + RateCode 01 per BookNo",
+      "All Residential per area with consumption > X",
+      "All Disconnected per area with revenue < Y",
+      "Specific BookNo + Status + RateCode combination",
+      "Custom range queries on consumption/revenue per dimension"
+    ],
+    "features_needed": [
+      "Multi-filter support with AND logic (all filters applied together)",
+      "Dimension + Status combinations (e.g., Area + ACTIVE, BookNo + RateCode 01)",
+      "Range filtering on consumption and revenue",
+      "Real-time aggregation updates on filter change (debounced 300ms)",
+      "Show filtered results by month and year",
+      "Cross-chart filtering (click chart bar → apply dimension filter)",
+      "Dashboard map synchronization (bidirectional)",
+      "Reset filters button",
+      "Active filters display (chip tags showing all applied filters)",
+      "Filter count indicator (showing N records matching filters)"
+    ]
+  },
+  "visualizations": {
+    "status": "PARTIALLY COMPLETED",
+    "existing_implemented": [
+      "✅ Line Charts (Consumption trend for individual accounts)",
+      "✅ Bar Charts (Anomaly types, severity)",
+      "✅ Pie Charts (Anomaly distribution)",
+      "✅ Geographic Maps (Leaflet markers)"
+    ],
+    "charts_to_implement": [
+      "Area Charts (consumption trends over time)",
+      "Stacked Bar Charts (status/classification breakdowns by area/route)",
+      "Donut Charts (ratio comparisons: Residential vs Commercial, ACTIVE vs DISCONNECTED)",
+      "Heatmaps (geographic density of disconnections or consumption)",
+      "Treemaps (hierarchical data - area→route→account)",
+      "Ranking/Leaderboard views (Top 10 accounts by consumption/revenue)",
+      "Line Chart aggregations (monthly consumption/revenue trends)"
+    ],
+    "ui_style": {
+      "theme": [
+        "✅ Modern enterprise dashboard (glassmorphism)",
+        "✅ Dark mode",
+        "✅ Responsive grid layout",
+        "✅ Animated transitions (Framer Motion)",
+        "Interactive tooltips"
+      ]
+    }
+  },
+  "performance_optimization": {
+    "strategy": "START SIMPLE - Main thread memoized functions, scale only if needed",
+    "initial_approach": [
+      "Memoize aggregation functions using React.useMemo",
+      "Debounce filter updates (300ms) to batch rapid filter changes",
+      "Lazy-load chart components using Suspense/React.lazy",
+      "Use staticDataService for pre-computed aggregations"
+    ],
+    "future_optimization_if_needed": [
+      "Web Workers if dataset grows beyond 100k records",
+      "IndexedDB caching if performance issues arise",
+      "Virtual scrolling for leaderboards"
+    ]
+  },
+  "existing_stack": {
+    "frontend": [
+      "✅ React",
+      "✅ Vite",
+      "TypeScript (partial)"
+    ],
+    "charts": [
+      "✅ Recharts (already in use)",
+      "ApexCharts (not yet used)",
+      "Apache ECharts (not yet used)"
+    ],
+    "gis": [
+      "✅ Leaflet (already in use)",
+      "Turf.js (not yet used)"
+    ],
+    "state_management": [
+      "✅ React Query",
+      "Zustand (not yet used)"
+    ],
+    "animations": [
+      "✅ Framer Motion"
+    ]
+  },
+  "roadmap_placement": {
+    "decision": "NEW PHASE 2.5: Analytics Experience",
+    "existing_phases": [
+      "Phase 01: Foundation - Dashboard with anomaly detection ✅",
+      "Phase 02: Static Data Experience - month selector, dataset metadata",
+      "Phase 02.5: Analytics Experience - comprehensive dashboard analytics (THIS PHASE)"
+    ]
+  },
+  "implementation_plan": {
+    "phase_1_priority": "Foundation: Temporal aggregation engine + 7 KPI cards + basic per-dimension analysis",
+    "phase_1_details": [
+      "Implement month/year temporal grouping in staticDataService",
+      "Add aggregation methods: consumption & revenue by area/route/status/classification per month/year",
+      "Build 7 KPI cards with temporal data",
+      "Create basic charts: consumption/revenue trends by month, basic dimension breakdowns"
+    ],
+    "phase_2_priority": "Build 5 analytics modules with temporal + dimensional analysis",
+    "phase_2_details": [
+      "Consumption analytics (by area, route, status, classification per month/year)",
+      "Revenue analytics (by area, route, status, classification per month/year)",
+      "Area analytics (consumption/revenue by status and classification within area)",
+      "Route analytics (consumption/revenue by status and classification within route)",
+      "Status & Classification analytics (cross-dimensional breakdowns)"
+    ],
+    "phase_3_priority": "Advanced filtering system with dimension combinations",
+    "phase_3_details": [
+      "Implement multi-filter UI (area, route, status, classification, ranges)",
+      "Support filter combinations: Area + Status, Route + Classification, etc.",
+      "Real-time aggregation updates based on active filters",
+      "Show filtered results grouped by month/year",
+      "Filter count indicator and active filter chips"
+    ],
+    "phase_4_priority": "Cross-filter interaction and Dashboard map sync",
+    "phase_4_details": [
+      "Click chart bars to apply dimension filters",
+      "Bidirectional sync with Dashboard map",
+      "Year-over-year comparisons"
+    ],
+    "phase_5_priority": "Smart insights + advanced visualizations",
+    "phase_5_details": [
+      "Smart insights with trend detection across months/years",
+      "Heatmaps, treemaps, leaderboards",
+      "Performance polish and optimization"
+    ]
+  },
+  "success_criteria": {
+    "phase_1_complete": [
+      "All 7 KPI cards display and update with data",
+      "Month and year selector/grouping functional",
+      "Basic consumption & revenue aggregation by area, route, status, classification per month",
+      "Analytics page shows temporal trends (month-over-month)"
+    ],
+    "phase_2_complete": [
+      "All 5 analytics modules display comprehensive charts",
+      "Each module shows consumption and revenue by multiple dimensions",
+      "Temporal grouping (by month and by year) working for all modules",
+      "Dimension breakdowns accurate (Area→Status→Revenue by month, etc.)"
+    ],
+    "phase_3_complete": [
+      "All filter controls functional (dropdowns, toggles, sliders, range inputs)",
+      "Multi-filter combinations working (Area + Status, Route + Classification, etc.)",
+      "Filter results update all charts in real-time",
+      "Filtered aggregations show data grouped by month/year",
+      "Active filter chips and filter count display"
+    ],
+    "phase_4_complete": [
+      "Clicking chart elements applies dimension filters",
+      "Dashboard map reflects Analytics filter state",
+      "Analytics charts reflect Dashboard map selections",
+      "Year-over-year comparison view available"
+    ]
+  },
+  "notes": {
+    "current_gaps": [
+      "Analytics route is currently a placeholder (src/pages/Analytics.jsx)",
+      "No temporal (month/year) aggregations implemented",
+      "No consumption/revenue aggregations by area/route/status/classification per time period",
+      "No multi-dimensional filtering UI",
+      "No support for complex filter combinations (Area+Status, Route+Classification, etc.)",
+      "No cross-filter interaction between Analytics and Dashboard",
+      "Smart insights engine not implemented"
+    ],
+    "temporal_requirements": [
+      "Group all metrics by month and by year",
+      "Support month-over-month trend analysis",
+      "Support year-over-year comparison (same month different years)",
+      "Show month selector/year selector in UI",
+      "All analytics modules must support temporal grouping"
+    ],
+    "filter_requirements": [
+      "Multi-dimensional filtering (AND logic: all selected filters must match)",
+      "Support filter combinations: area + status, route + ratecode, etc.",
+      "Example: Show all ACTIVE accounts in Area X with ratecode Y",
+      "Show aggregated consumption/revenue for filtered results grouped by month/year",
+      "Range filtering on consumption and revenue",
+      "Real-time aggregation on filter changes"
+    ],
+    "dependencies": [
+      "Extend staticDataService with temporal aggregation methods",
+      "Add month/year grouping functions",
+      "Implement dimension-based aggregation: (area|route|status|ratecode) × (metric: consumption|revenue) × (temporal: month|year)",
+      "Implement multi-filter parser and aggregation reducer",
+      "Analytics page must connect to same data context as Dashboard",
+      "Implement filter state management (React Context or Zustand)",
+      "Dashboard map must respond to filter state from Analytics"
+    ]
+  }
+}

@@ -12,6 +12,7 @@ import {
   ComposedChart,
   Line,
 } from 'recharts';
+import { useSharedFilters } from '../../lib/FilterContext';
 
 function LoadingChart() {
   return (
@@ -34,6 +35,7 @@ function MetricBox({ label, value, unit = '' }) {
 }
 
 export default function AreaAnalytics({ selectedMonth, filteredAccounts = [] }) {
+  const { toggleArea } = useSharedFilters();
   // Prepare area performance data for selected month from filtered accounts
   const areaPerformanceData = useMemo(() => {
     const areaMap = {};
@@ -192,6 +194,8 @@ export default function AreaAnalytics({ selectedMonth, filteredAccounts = [] }) 
                   fill="#3b82f6"
                   name="Consumption (cu.m)"
                   radius={[8, 8, 0, 0]}
+                  onClick={(data) => toggleArea(data.name)}
+                  cursor="pointer"
                 />
                 <Line
                   yAxisId="right"

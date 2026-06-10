@@ -1,4 +1,4 @@
-import { verifyFirebaseIdToken, isAdminEmail } from '../lib/firebaseAuth.js';
+import { verifyFirebaseIdToken, isAdminUser } from '../lib/firebaseAuth.js';
 import { findUserByEmail, createOrUpdateUser } from '../lib/userStore.js';
 
 const sendJson = (res, status, body) => {
@@ -26,7 +26,7 @@ export default async function handler(req, res) {
     }
 
     const existingUser = await findUserByEmail(email);
-    const role = existingUser?.role || (isAdminEmail(email) ? 'admin' : 'viewer');
+    const role = existingUser?.role || (isAdminUser({ email, uid: payload.uid || payload.sub }) ? 'admin' : 'viewer');
     const banned = existingUser?.banned || false;
 
     const user = await createOrUpdateUser({

@@ -1,4 +1,4 @@
-import { verifyFirebaseIdToken, isAdminEmail } from '../lib/firebaseAuth.js';
+import { verifyFirebaseIdToken, isAdminUser } from '../lib/firebaseAuth.js';
 import { getAllUsers } from '../lib/userStore.js';
 
 const sendJson = (res, status, body) => {
@@ -18,7 +18,7 @@ export default async function handler(req, res) {
 
   try {
     const payload = await verifyFirebaseIdToken(token);
-    if (!isAdminEmail(payload.email)) {
+    if (!isAdminUser({ email: payload.email, uid: payload.uid || payload.sub })) {
       return sendJson(res, 403, { error: 'forbidden' });
     }
 

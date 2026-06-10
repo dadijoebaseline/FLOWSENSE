@@ -8,6 +8,7 @@ import Login from '@/pages/Login';
 import AdminUsers from '@/pages/AdminUsers';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
+import { FilterProvider } from '@/lib/FilterContext';
 
 import AppLayout from '@/components/layout/AppLayout';
 import Dashboard from '@/pages/Dashboard';
@@ -49,12 +50,14 @@ const AuthenticatedApp = () => {
 function App() {
   return (
     <AuthProvider>
-      <QueryClientProvider client={queryClientInstance}>
-        <Router>
-          <AuthenticatedApp />
-        </Router>
-        <Toaster />
-      </QueryClientProvider>
+      <FilterProvider>
+        <QueryClientProvider client={queryClientInstance}>
+          <Router>
+            <AuthenticatedApp />
+          </Router>
+          <Toaster />
+        </QueryClientProvider>
+      </FilterProvider>
     </AuthProvider>
   );
 }
