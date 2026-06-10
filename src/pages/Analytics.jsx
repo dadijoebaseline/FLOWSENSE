@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { staticDataService } from '../lib/staticDataService';
 import { getClassificationName } from '../lib/rateCodeMap';
-import { useAnalyticsFilters } from '../hooks/useAnalyticsFilters';
+import { useSharedFilters } from '../lib/FilterContext';
 import ConsumptionAnalytics from '../components/analytics/ConsumptionAnalytics';
 import RevenueAnalytics from '../components/analytics/RevenueAnalytics';
 import AreaAnalytics from '../components/analytics/AreaAnalytics';
@@ -87,9 +87,10 @@ export default function Analytics() {
   const [monthOptions, setMonthOptions] = useState([]);
   const [activeTab, setActiveTab] = useState('kpi');
 
-  // Initialize filter hook
+  // Use shared filter context for bidirectional sync
   const {
     filters,
+    isFilterActive,
     toggleArea,
     toggleRoute,
     toggleStatus,
@@ -99,8 +100,7 @@ export default function Analytics() {
     resetFilters,
     removeFilter,
     applyFilters,
-    hasActiveFilters,
-  } = useAnalyticsFilters();
+  } = useSharedFilters();
 
   // Load available months
   useEffect(() => {
@@ -199,7 +199,7 @@ export default function Analytics() {
         <h1 className="text-4xl font-bold text-white">Analytics Dashboard</h1>
         <p className="text-slate-400">
           Temporal analysis of water consumption, revenue, and account metrics
-          {hasActiveFilters && (
+          {isFilterActive && (
             <span className="ml-2 text-blue-400">
               ({filteredAccounts.length} accounts matching filters)
             </span>
