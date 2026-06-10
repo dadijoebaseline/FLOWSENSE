@@ -9,12 +9,12 @@ See: .gsd/PROJECT.md (updated 2026-05-14)
 
 ## Current Position
 
-Phase: 1 of 3 (Static Conversion)
-Plan: 1 of 1 in current phase
-Status: Phase complete
-Last activity: 2026-05-21 — Added anomaly export, improved dashboard map mobile visibility, default cluster markers, map search suggestion overlay and click-to-zoom support, React key warning fixes, and updated `.gsd` documentation
+Phase: 2.5 of 3 (Analytics Experience)
+Plan: 4 of 5 in current phase (Cross-Filter & Map Integration)
+Status: Plan complete
+Last activity: 2026-06-10 — Implemented cross-filter interactions with chart click handlers, bidirectional Dashboard map sync, FilterContext for shared state, and tested filter propagation across pages
 
-Progress: [███████___ ] 50%
+Progress: [████████░░ ] 80%
 
 ## Performance Metrics
 
@@ -28,9 +28,10 @@ Progress: [███████___ ] 50%
 
 | Phase | Plans | Completed | Status |
 | ----- | ----- | --------- | ------ |
-| Phase 1 | 3 | 3 | Complete |
-| Phase 2 | 2 | 0 | Not started |
-| Phase 3 | 2 | 1 | In progress |
+| Phase 1: Static Conversion | 3 | 3 | Complete |
+| Phase 2: Static Data Experience | 3 | 0 | Not started |
+| Phase 2.5: Analytics Experience | 5 | 4 | In progress |
+| Phase 3: Deployment & Documentation | 2 | 1 | In progress |
 
 ## Accumulated Context
 

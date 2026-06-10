@@ -2,12 +2,13 @@
 
 ## Overview
 
-This roadmap captures the current static deployment path for FlowSense. The first phase is complete: convert the app to a fully static, deployable React site that reads GeoJSON from `public/data/`.
+This roadmap captures the evolution of FlowSense from static anomaly detection to comprehensive analytics. Phase 1 is complete. Phase 2 focuses on improving dataset discovery, and Phase 2.5 introduces enterprise-grade analytics with temporal and multi-dimensional analysis.
 
 ## Phases
 
 - [x] **Phase 1: Static Conversion** - Convert FlowSense from Base44-backed to a static Vite app
 - [ ] **Phase 2: Static Data Experience** - Improve dataset discovery and month selection
+- [ ] **Phase 2.5: Analytics Experience (NEW)** - Temporal & multi-dimensional analytics with advanced filtering
 - [ ] **Phase 3: Deployment & Documentation** - Prepare GitHub/Vercel deployment guide and demo notes
 
 ## Phase Details
@@ -44,10 +45,38 @@ Plans:
 - [ ] 02-02: Add dataset metadata and file instructions
 - [ ] 02-03: Refine anomaly detection behavior for low-volume accounts and active-status filtering
 
+### Phase 2.5: Analytics Experience (NEW)
+
+**Goal**: Transform Analytics route into enterprise-grade dashboard with temporal analysis, multi-dimensional breakdown, and advanced filtering.
+**Depends on**: Phase 1
+**Requirements**: 
+- Temporal grouping (month/year)
+- Dimensional aggregation (area, route, classification, status)
+- Multi-dimensional filtering with dimension combinations
+- Advanced filter UI
+- Integration with existing Dashboard map
+
+**Success Criteria**:
+
+1. Analytics page displays 7 KPI cards with temporal data
+2. All 5 analytics modules (Consumption, Revenue, Area, Route, Status/Classification) functional
+3. Advanced multi-dimensional filtering working (supports combinations like Area+Status, Route+Classification)
+4. Charts update in real-time when filters applied
+5. Bidirectional sync with Dashboard map
+
+Plans:
+- [x] 02.5-01: Extend staticDataService with temporal aggregation methods
+- [x] 02.5-02: Build 5 analytics modules with consumption/revenue by dimensions
+- [x] 02.5-03: Implement advanced multi-dimensional filter system
+- [x] 02.5-04: Cross-filter interaction and map synchronization
+- [ ] 02.5-05: Smart insights engine and performance optimization
+
+**Implementation details**: See `.gsd/ANALYTICS-PLAN.md`
+
 ### Phase 3: Deployment & Documentation
 
 **Goal**: Finalize GitHub repo setup and static hosting documentation.
-**Depends on**: Phase 1, Phase 2
+**Depends on**: Phase 1, Phase 2, Phase 2.5
 **Success Criteria**:
 
 1. Repo is ready for GitHub push
@@ -62,6 +91,14 @@ Plans:
 
 | Phase | Plans Complete | Status |
 |-------|----------------|--------|
-| Phase 1: Static Conversion | 3/3 | Complete |
+| Phase 1: Static Conversion | 3/3 | ✅ Complete |
 | Phase 2: Static Data Experience | 0/3 | Not started |
+| Phase 2.5: Analytics Experience | 4/5 | 🔄 In progress |
 | Phase 3: Deployment & Documentation | 1/2 | In progress |
+
+## Timeline Estimate
+
+- **Phase 1**: ✅ Complete
+- **Phase 2**: 1-2 weeks
+- **Phase 2.5**: 3-4 weeks (5 implementation phases)
+- **Phase 3**: 1 week
