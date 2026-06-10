@@ -221,4 +221,288 @@ export const staticDataService = {
   getLoadErrors() {
     return loadErrors.slice();
   },
+
+  /**
+   * Extract year from month label (e.g., '2026-02' -> 2026)
+   * @param {string} month - Month in format 'YYYY-MM'
+   * @returns {number} Year as number
+   */
+  _getYear(month) {
+    return parseInt(month.split('-')[0], 10);
+  },
+
+  /**
+   * Extract month number from month label (e.g., '2026-02' -> 2)
+   * @param {string} month - Month in format 'YYYY-MM'
+   * @returns {number} Month as number (1-12)
+   */
+  _getMonthNumber(month) {
+    return parseInt(month.split('-')[1], 10);
+  },
+
+  /**
+   * Get consumption aggregated by area per month
+   * Returns: { area: { month: { total, avg, count, min, max } } }
+   * @returns {Promise<Object>}
+   */
+  async getConsumptionByAreaPerMonth() {
+    const allAccounts = await loadAllAccounts();
+    const result = {};
+
+    for (const account of allAccounts) {
+      if (!account.area || account.cumUsed === undefined) continue;
+
+      const area = account.area;
+      const month = account.datasetId;
+      const consumption = Number(account.cumUsed) || 0;
+
+      if (!result[area]) result[area] = {};
+      if (!result[area][month]) {
+        result[area][month] = {
+          total: 0,
+          count: 0,
+          values: [],
+        };
+      }
+
+      result[area][month].total += consumption;
+      result[area][month].count += 1;
+      result[area][month].values.push(consumption);
+    }
+
+    // Calculate avg, min, max
+    for (const area in result) {
+      for (const month in result[area]) {
+        const data = result[area][month];
+        data.avg = data.total / data.count;
+        data.min = Math.min(...data.values);
+        data.max = Math.max(...data.values);
+        delete data.values; // Remove raw values
+      }
+    }
+
+    return result;
+  },
+
+  /**
+   * Get revenue aggregated by route (bookNo) per month
+   * Returns: { route: { month: { total, avg, count, min, max } } }
+   * @returns {Promise<Object>}
+   */
+  async getRevenueByRoutePerMonth() {
+    const allAccounts = await loadAllAccounts();
+    const result = {};
+
+    for (const account of allAccounts) {
+      if (!account.bookNo || account.billAmount === undefined) continue;
+
+      const route = account.bookNo;
+      const month = account.datasetId;
+      const revenue = Number(account.billAmount) || 0;
+
+      if (!result[route]) result[route] = {};
+      if (!result[route][month]) {
+        result[route][month] = {
+          total: 0,
+          count: 0,
+          values: [],
+        };
+      }
+
+      result[route][month].total += revenue;
+      result[route][month].count += 1;
+      result[route][month].values.push(revenue);
+    }
+
+    // Calculate avg, min, max
+    for (const route in result) {
+      for (const month in result[route]) {
+        const data = result[route][month];
+        data.avg = data.total / data.count;
+        data.min = Math.min(...data.values);
+        data.max = Math.max(...data.values);
+        delete data.values;
+      }
+    }
+
+    return result;
+  },
+
+  /**
+   * Get account counts aggregated by status per month
+   * Returns: { status: { month: { count } } }
+   * @returns {Promise<Object>}
+   */
+  async getAccountsByStatusPerMonth() {
+    const allAccounts = await loadAllAccounts();
+    const result = {};
+
+    for (const account of allAccounts) {
+      if (!account.status) continue;
+
+      const status = account.status;
+      const month = account.datasetId;
+
+      if (!result[status]) result[status] = {};
+      if (!result[status][month]) {
+        result[status][month] = { count: 0 };
+      }
+
+      result[status][month].count += 1;
+    }
+
+    return result;
+  },
+
+  /**
+   * Get metrics aggregated by classification (rateCode) per month
+   * Returns: { rateCode: { month: { consumption: { total, avg }, revenue: { total, avg }, count } } }
+   * @returns {Promise<Object>}
+   */
+  async getMetricsByClassificationPerMonth() {
+    const allAccounts = await loadAllAccounts();
+    const result = {};
+
+    for (const account of allAccounts) {
+      if (!account.rateCode) continue;
+
+      const rateCode = account.rateCode;
+      const month = account.datasetId;
+      const consumption = Number(account.cumUsed) || 0;
+      const revenue = Number(account.billAmount) || 0;
+
+      if (!result[rateCode]) result[rateCode] = {};
+      if (!result[rateCode][month]) {
+        result[rateCode][month] = {
+          consumption: { total: 0, values: [] },
+          revenue: { total: 0, values: [] },
+          count: 0,
+        };
+      }
+
+      result[rateCode][month].consumption.total += consumption;
+      result[rateCode][month].consumption.values.push(consumption);
+      result[rateCode][month].revenue.total += revenue;
+      result[rateCode][month].revenue.values.push(revenue);
+      result[rateCode][month].count += 1;
+    }
+
+    // Calculate averages
+    for (const rateCode in result) {
+      for (const month in result[rateCode]) {
+        const data = result[rateCode][month];
+        data.consumption.avg = data.consumption.total / data.count;
+        data.revenue.avg = data.revenue.total / data.count;
+        delete data.consumption.values;
+        delete data.revenue.values;
+      }
+    }
+
+    return result;
+  },
+
+  /**
+   * Get consumption trend by year and month
+   * Returns: { year: { month: { total, avg, count } } }
+   * @returns {Promise<Object>}
+   */
+  async getConsumptionTrendByYear() {
+    const allAccounts = await loadAllAccounts();
+    const result = {};
+
+    for (const account of allAccounts) {
+      if (account.cumUsed === undefined) continue;
+
+      const month = account.datasetId;
+      const year = this._getYear(month);
+      const monthNum = this._getMonthNumber(month);
+      const consumption = Number(account.cumUsed) || 0;
+
+      const yearKey = `${year}`;
+      const monthKey = `${monthNum.toString().padStart(2, '0')}`;
+
+      if (!result[yearKey]) result[yearKey] = {};
+      if (!result[yearKey][monthKey]) {
+        result[yearKey][monthKey] = {
+          total: 0,
+          count: 0,
+          values: [],
+        };
+      }
+
+      result[yearKey][monthKey].total += consumption;
+      result[yearKey][monthKey].count += 1;
+      result[yearKey][monthKey].values.push(consumption);
+    }
+
+    // Calculate avg
+    for (const year in result) {
+      for (const month in result[year]) {
+        const data = result[year][month];
+        data.avg = data.total / data.count;
+        data.min = Math.min(...data.values);
+        data.max = Math.max(...data.values);
+        delete data.values;
+      }
+    }
+
+    return result;
+  },
+
+  /**
+   * Get all unique values for filtering
+   * @returns {Promise<Object>} Object with unique areas, routes, statuses, rateCodes
+   */
+  async getFilterOptions() {
+    const allAccounts = await loadAllAccounts();
+    const areas = new Set();
+    const routes = new Set();
+    const statuses = new Set();
+    const rateCodes = new Set();
+
+    for (const account of allAccounts) {
+      if (account.area) areas.add(account.area);
+      if (account.bookNo) routes.add(account.bookNo);
+      if (account.status) statuses.add(account.status);
+      if (account.rateCode) rateCodes.add(account.rateCode);
+    }
+
+    return {
+      areas: Array.from(areas).sort(),
+      routes: Array.from(routes).sort(),
+      statuses: Array.from(statuses).sort(),
+      rateCodes: Array.from(rateCodes).sort(),
+    };
+  },
+
+  /**
+   * Get KPI metrics for all data
+   * @returns {Promise<Object>}
+   */
+  async getKPIMetrics() {
+    const allAccounts = await loadAllAccounts();
+
+    let totalConsumption = 0;
+    let totalRevenue = 0;
+    let totalAccounts = allAccounts.length;
+    let activeCount = 0;
+    let disconnectedCount = 0;
+
+    for (const account of allAccounts) {
+      totalConsumption += Number(account.cumUsed) || 0;
+      totalRevenue += Number(account.billAmount) || 0;
+      if (account.status === 'ACTIVE') activeCount += 1;
+      if (account.status === 'DISCONNECTED') disconnectedCount += 1;
+    }
+
+    return {
+      totalConsumption: Math.round(totalConsumption * 100) / 100,
+      totalRevenue: Math.round(totalRevenue * 100) / 100,
+      totalAccounts,
+      activeCount,
+      disconnectedCount,
+      avgConsumptionPerAccount: totalAccounts > 0 ? Math.round((totalConsumption / totalAccounts) * 100) / 100 : 0,
+      avgRevenuePerAccount: totalAccounts > 0 ? Math.round((totalRevenue / totalAccounts) * 100) / 100 : 0,
+    };
+  },
 };
