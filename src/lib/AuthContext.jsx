@@ -9,7 +9,7 @@ const ADMIN_EMAIL = normalizeEmail(import.meta.env.VITE_ADMIN_EMAIL || '');
 
 const getRoleFromEmail = (email) => (normalizeEmail(email) === ADMIN_EMAIL ? 'admin' : 'viewer');
 
-const fetchUserSession = async (idToken) => {
+const fetchUserSession = async (idToken, firebaseUser = null) => {
   try {
     const response = await fetch('/api/auth/session', {
       method: 'GET',
@@ -20,8 +20,9 @@ const fetchUserSession = async (idToken) => {
 
     // Handle 404 gracefully (static deployment scenario)
     if (response.status === 404) {
-      // On static deployments without backend, assume user is authenticated
-      return { success: true, user: { email: 'demo@example.com' } };
+      // On static deployments without backend, use the actual Firebase user's email
+      const email = firebaseUser?.email || 'demo@example.com';
+      return { success: true, user: { email, name: firebaseUser?.displayName || 'User' } };
     }
 
     if (!response.ok) {
@@ -33,7 +34,8 @@ const fetchUserSession = async (idToken) => {
   } catch (error) {
     // Network error or other fetch issue - gracefully handle for static deployment
     if (error.message && error.message.includes('Failed to fetch')) {
-      return { success: true, user: { email: 'demo@example.com' } };
+      const email = firebaseUser?.email || 'demo@example.com';
+      return { success: true, user: { email, name: firebaseUser?.displayName || 'User' } };
     }
     throw error;
   }
@@ -59,12 +61,16 @@ export const AuthProvider = ({ children }) => {
 
       try {
         const token = await firebaseUser.getIdToken(true);
-        const session = await fetchUserSession(token);
+        const session = await fetchUserSession(token, firebaseUser);
 
         if (disposed) return;
 
         if (session.success && session.user) {
-          setUser(session.user);
+          const userWithRole = {
+            ...session.user,
+            role: getRoleFromEmail(session.user.email),
+          };
+          setUser(userWithRole);
           setIsAuthenticated(true);
           setAuthError(null);
         } else {
@@ -125,7 +131,7 @@ export const AuthProvider = ({ children }) => {
       const response = await signInWithPopup(auth, googleProvider);
       const firebaseUser = response.user;
       const token = await firebaseUser.getIdToken(true);
-      const session = await fetchUserSession(token);
+      const session = await fetchUserSession(token, firebaseUser);
 
       if (!session.success) {
         await signOut(auth);
@@ -135,7 +141,11 @@ export const AuthProvider = ({ children }) => {
         return { success: false, error: session.error || 'auth_required', message: session.message || 'Authentication failed.' };
       }
 
-      setUser(session.user);
+      const userWithRole = {
+        ...session.user,
+        role: getRoleFromEmail(session.user.email),
+      };
+      setUser(userWithRole);
       setIsAuthenticated(true);
       setAuthError(null);
       return { success: true };
