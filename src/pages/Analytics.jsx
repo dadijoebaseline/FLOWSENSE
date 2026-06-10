@@ -26,8 +26,10 @@ const RevenueAnalytics = lazy(() => import('../components/analytics/RevenueAnaly
 const AreaAnalytics = lazy(() => import('../components/analytics/AreaAnalytics'));
 const RouteAnalytics = lazy(() => import('../components/analytics/RouteAnalytics'));
 const StatusClassificationAnalytics = lazy(() => import('../components/analytics/StatusClassificationAnalytics'));
+const AccountTrends = lazy(() => import('../components/analytics/AccountTrends'));
 
 const TABS = [
+  { id: 'accounts', label: 'Account Trends', icon: '👥' },
   { id: 'kpi', label: 'Dashboard', icon: '📊' },
   { id: 'consumption', label: 'Consumption', icon: '💧' },
   { id: 'revenue', label: 'Revenue', icon: '💰' },
@@ -162,6 +164,13 @@ export default function Analytics() {
   const { data: kpiMetrics, isLoading: isLoadingKPI, error: errorKPI } = useQuery({
     queryKey: ['kpiMetrics'],
     queryFn: () => staticDataService.getKPIMetrics(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Fetch monthly account metrics (per-month, not summed)
+  const { data: monthlyMetrics = [], isLoading: isLoadingMonthly } = useQuery({
+    queryKey: ['monthlyAccountMetrics'],
+    queryFn: () => staticDataService.getMonthlyAccountMetrics(),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
@@ -319,6 +328,13 @@ export default function Analytics() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.2 }}
       >
+        {/* Account Trends Tab */}
+        {activeTab === 'accounts' && (
+          <Suspense fallback={<ModuleLoadingFallback />}>
+            <AccountTrends monthlyData={monthlyMetrics} />
+          </Suspense>
+        )}
+
         {/* Dashboard Tab - KPI Cards */}
         {activeTab === 'kpi' && (
           <div className="space-y-6">

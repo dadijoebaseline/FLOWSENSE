@@ -579,12 +579,18 @@ export const staticDataService = {
 
     if (areaRanks.length > 0) {
       const top = areaRanks[0];
-      const variance = ((top.total / avgConsumption - 1) * 100).toFixed(0);
+      let varianceStr = '0';
+      if (avgConsumption > 0 && !isNaN(avgConsumption)) {
+        const variance = ((top.total / avgConsumption - 1) * 100);
+        if (!isNaN(variance) && isFinite(variance)) {
+          varianceStr = variance.toFixed(0);
+        }
+      }
       insights.push({
         type: 'rank',
         icon: '📊',
         title: `${top.name} leads consumption`,
-        description: `Area ${top.name} ranks #1 with ${Math.round(top.total).toLocaleString()} cu.m. (${variance > 0 ? '↑' : ''}${variance}% vs avg)`,
+        description: `Area ${top.name} ranks #1 with ${Math.round(top.total).toLocaleString()} cu.m. (${varianceStr > 0 ? '↑' : ''}${varianceStr}% vs avg)`,
         confidence: 0.95,
         color: 'bg-blue-50',
       });
@@ -609,12 +615,18 @@ export const staticDataService = {
 
     if (routeRanks.length > 0) {
       const top = routeRanks[0];
-      const variance = ((top.total / avgRevenue - 1) * 100).toFixed(0);
+      let varianceStr = '0';
+      if (avgRevenue > 0 && !isNaN(avgRevenue)) {
+        const variance = ((top.total / avgRevenue - 1) * 100);
+        if (!isNaN(variance) && isFinite(variance)) {
+          varianceStr = variance.toFixed(0);
+        }
+      }
       insights.push({
         type: 'rank',
         icon: '💰',
         title: `Route ${top.name} revenue leader`,
-        description: `Route ${top.name} generates ₹${Math.round(top.total).toLocaleString()} (${variance > 0 ? '↑' : ''}${variance}% vs avg)`,
+        description: `Route ${top.name} generates ₹${Math.round(top.total).toLocaleString()} (${varianceStr > 0 ? '↑' : ''}${varianceStr}% vs avg)`,
         confidence: 0.9,
         color: 'bg-green-50',
       });
@@ -728,12 +740,18 @@ export const staticDataService = {
     if (byStatus.ACTIVE && byStatus.DISCONNECTED) {
       const activeAvg = byStatus.ACTIVE.consumption / byStatus.ACTIVE.count;
       const disconnectedAvg = byStatus.DISCONNECTED.consumption / byStatus.DISCONNECTED.count;
-      const ratio = (activeAvg / disconnectedAvg).toFixed(2);
+      let ratioStr = '0';
+      if (disconnectedAvg > 0 && !isNaN(disconnectedAvg)) {
+        const ratio = activeAvg / disconnectedAvg;
+        if (!isNaN(ratio) && isFinite(ratio)) {
+          ratioStr = ratio.toFixed(2);
+        }
+      }
 
       insights.push({
         type: 'comparative',
         icon: '📋',
-        title: `Active accounts use ${ratio}x more water`,
+        title: `Active accounts use ${ratioStr}x more water`,
         description: `ACTIVE accounts average ${activeAvg.toFixed(0)} cu.m., DISCONNECTED average ${disconnectedAvg.toFixed(0)} cu.m.`,
         confidence: 0.75,
         color: 'bg-indigo-50',
@@ -741,5 +759,84 @@ export const staticDataService = {
     }
 
     return insights;
+  },
+
+  /**
+   * Get per-month account metrics (NOT summed across months)
+   * Follows Analytics checklist: count accounts per month only
+   * @returns {Promise<Array>} Array of monthly metrics
+   */
+  async getMonthlyAccountMetrics() {
+    const months = this.getAvailableMonths().sort();
+    const monthlyMetrics = [];
+    const accountIds = {};
+
+    for (const month of months) {
+      const data = await this.getGeoJSONData(month);
+      const accounts = data.features
+        ? data.features.map(f => ({ ...f.properties, datasetId: month }))
+        : [];
+
+      // Count unique accounts in THIS month (not cumulative)
+      const uniqueInMonth = new Set(accounts.map(a => a.accountId));
+      
+      // Count new accounts (not seen in previous months)
+      let newAccounts = 0;
+      for (const accountId of uniqueInMonth) {
+        if (!accountIds[accountId]) {
+          newAccounts += 1;
+          accountIds[accountId] = true;
+        }
+      }
+
+      const totalConsumption = accounts.reduce((sum, a) => sum + (Number(a.cumUsed) || 0), 0);
+      const totalRevenue = accounts.reduce((sum, a) => sum + (Number(a.billAmount) || 0), 0);
+      const activeCount = accounts.filter(a => a.status === 'ACTIVE').length;
+      const disconnectedCount = accounts.filter(a => a.status === 'DISCONNECTED').length;
+
+      monthlyMetrics.push({
+        month,
+        totalAccounts: uniqueInMonth.size,
+        newAccounts,
+        recurringAccounts: uniqueInMonth.size - newAccounts,
+        totalConsumption: Math.round(totalConsumption * 100) / 100,
+        totalRevenue: Math.round(totalRevenue * 100) / 100,
+        activeCount,
+        disconnectedCount,
+        avgConsumptionPerAccount: uniqueInMonth.size > 0 ? Math.round((totalConsumption / uniqueInMonth.size) * 100) / 100 : 0,
+        avgRevenuePerAccount: uniqueInMonth.size > 0 ? Math.round((totalRevenue / uniqueInMonth.size) * 100) / 100 : 0,
+      });
+    }
+
+    return monthlyMetrics;
+  },
+
+  /**
+   * Get single-month metrics (for selected month only)
+   * @param {string} month - Month identifier (e.g., '2026-05')
+   * @returns {Promise<Object>} Metrics for that month
+   */
+  async getMonthMetrics(month) {
+    const data = await this.getGeoJSONData(month);
+    const accounts = data.features
+      ? data.features.map(f => ({ ...f.properties, datasetId: month }))
+      : [];
+
+    const totalConsumption = accounts.reduce((sum, a) => sum + (Number(a.cumUsed) || 0), 0);
+    const totalRevenue = accounts.reduce((sum, a) => sum + (Number(a.billAmount) || 0), 0);
+    const totalAccounts = accounts.length;
+    const activeCount = accounts.filter(a => a.status === 'ACTIVE').length;
+    const disconnectedCount = accounts.filter(a => a.status === 'DISCONNECTED').length;
+
+    return {
+      month,
+      totalAccounts,
+      totalConsumption: Math.round(totalConsumption * 100) / 100,
+      totalRevenue: Math.round(totalRevenue * 100) / 100,
+      activeCount,
+      disconnectedCount,
+      avgConsumptionPerAccount: totalAccounts > 0 ? Math.round((totalConsumption / totalAccounts) * 100) / 100 : 0,
+      avgRevenuePerAccount: totalAccounts > 0 ? Math.round((totalRevenue / totalAccounts) * 100) / 100 : 0,
+    };
   },
 };
