@@ -43,6 +43,16 @@ Deliver an enterprise-grade analytics experience using only client-side data and
 
 ## Key Features Implemented
 
+### Authentication & Authorization
+- **Google OAuth Integration**: Firebase-based login with Google provider
+- **Role-Based Access Control**: Three role tiers with granular permissions
+  - **Admin**: Full access (dashboard, analytics, anomalies, map, user management)
+  - **Manager**: Dashboard + map + anomalies (no analytics or admin controls)
+  - **Viewer**: Map + anomalies only (default for new users)
+- **Static Deployment Auth**: Graceful fallback when backend unavailable
+- **Email-based Admin Assignment**: Admin role determined by `VITE_ADMIN_EMAIL` environment variable
+- **User Persistence**: Stores user info in browser (localStorage) for session continuity
+
 ### Analytics Dashboard
 - **7 KPI Cards**: Total consumption, revenue, account counts, averages
 - **5 Analytics Modules**: Consumption, Revenue, Area, Route, Status/Classification
@@ -120,12 +130,16 @@ SmartInsights + Charts + Map
 - ✅ Environment variables documented
 - ✅ Data workflow documented
 
-### Security ✅
+### Security & Authentication ✅
 - ✅ No API keys in codebase
 - ✅ .gitignore protects secrets
 - ✅ Environment variables for sensitive data
 - ✅ MIT License included
 - ✅ No hardcoded credentials
+- ✅ Firebase Google OAuth integration
+- ✅ Role-based access control (Admin/Manager/Viewer)
+- ✅ Email-based admin assignment via VITE_ADMIN_EMAIL
+- ✅ Graceful auth fallback for static deployment
 
 ### Deployment ✅
 - ✅ Vite builds successfully
@@ -152,6 +166,9 @@ SmartInsights + Charts + Map
 | React Context for state | Lightweight, no external dependencies | ✅ Bidirectional sync |
 | Lazy-loaded modules | Reduce initial bundle, split on demand | ✅ ~400KB gzipped |
 | MIT License | Community-friendly, commercial use | ✅ Open source |
+| Firebase Google OAuth | No password management, OAuth provider | ✅ Secure auth |
+| Email-based admin role | Simple, no database required | ✅ Easy deployment |
+| Use actual Firebase email for role assignment | Matches user's Google login email | ✅ Correct admin access |
 
 ## Files Changed/Created
 
@@ -185,18 +202,27 @@ SmartInsights + Charts + Map
 
 ## Deployment Instructions
 
-1. **Push to GitHub**:
+1. **Configure Environment Variables** (`.env.local`):
+   ```bash
+   VITE_FIREBASE_API_KEY=your_api_key
+   VITE_FIREBASE_AUTH_DOMAIN=your_domain
+   VITE_FIREBASE_PROJECT_ID=your_project
+   VITE_ADMIN_EMAIL=admin@example.com  # Email with admin privileges
+   ```
+
+2. **Push to GitHub**:
    ```bash
    git remote add origin https://github.com/YOUR_USERNAME/flowsense.git
    git push -u origin main
    ```
 
-2. **Connect to Vercel**:
+3. **Connect to Vercel**:
    - Visit vercel.com/new
    - Import your GitHub repo
+   - Add environment variables in Vercel settings
    - Click Deploy
 
-3. **Live in 2-3 minutes** at `flowsense.vercel.app`
+4. **Live in 2-3 minutes** at `flowsense.vercel.app`
 
 See [DEPLOYMENT.md](../DEPLOYMENT.md) for detailed instructions.
 

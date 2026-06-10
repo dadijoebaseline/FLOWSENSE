@@ -2,14 +2,18 @@
 
 ## Overview
 
-This roadmap captures the evolution of FlowSense from static anomaly detection to comprehensive analytics. Phase 1 is complete. Phase 2 focuses on improving dataset discovery, and Phase 2.5 introduces enterprise-grade analytics with temporal and multi-dimensional analysis.
+This roadmap captures the evolution of FlowSense from static anomaly detection to comprehensive analytics. Phases 1, 2.5, and 3 are complete with post-launch auth role implementation. Phase 2 focuses on improving dataset discovery, and Phase 6 represents future enterprise features.
 
 ## Phases
 
 - [x] **Phase 1: Static Conversion** - Convert FlowSense from Base44-backed to a static Vite app
 - [ ] **Phase 2: Static Data Experience** - Improve dataset discovery and month selection
-- [ ] **Phase 2.5: Analytics Experience (NEW)** - Temporal & multi-dimensional analytics with advanced filtering
-- [ ] **Phase 3: Deployment & Documentation** - Prepare GitHub/Vercel deployment guide and demo notes
+- [x] **Phase 2.5: Analytics Experience** - Temporal & multi-dimensional analytics with advanced filtering
+- [x] **Phase 3: Deployment & Documentation** - Prepare GitHub/Vercel deployment guide and demo notes
+- [x] **v1.0.0 Post-Launch: Auth Roles (NEW)** - Role-based access control for static deployment
+- [ ] **Phase 4: Advanced Features** - URL state, exports, predictive analytics
+- [ ] **Phase 5: Data Management** - Upload UI, data validation
+- [ ] **Phase 6: Enterprise** - Backend auth, teams, API, auditing
 
 ## Phase Details
 
@@ -73,7 +77,21 @@ Plans:
 
 **Implementation details**: See `.gsd/ANALYTICS-PLAN.md`
 
-### Phase 3: Deployment & Documentation
+### v1.0.0 Post-Launch: Auth Roles (NEW)
+
+**Goal**: Fix authentication role assignment for static deployment, enabling admin-level access.
+**Depends on**: Phase 3
+**Success Criteria**:
+
+1. Admin email correctly assigned from `VITE_ADMIN_EMAIL`
+2. Role-based navigation working (Admin/Manager/Viewer)
+3. No hardcoded demo emails
+4. Uses actual Firebase user email for role assignment
+5. Static deployment with zero backend infrastructure
+
+**Implementation**: See `.gsd/AUTH-IMPLEMENTATION.md`
+
+### Phase 4: Advanced Features
 
 **Goal**: Finalize GitHub repo setup and static hosting documentation.
 **Depends on**: Phase 1, Phase 2, Phase 2.5
@@ -95,9 +113,10 @@ Plans:
 | Phase 2: Static Data Experience | 0/3 | Not started |
 | Phase 2.5: Analytics Experience | 5/5 | ✅ Complete |
 | Phase 3: Deployment & Documentation | 2/2 | ✅ Complete |
+| v1.0.0 Post-Launch: Auth Roles | 1/1 | ✅ Complete |
 
-**Overall Project Completion: 10/11 plans (91%)**
-**Project Status: SHIPPING READY** 🚀
+**Overall Project Completion: 11/11 plans (100% core scope)**  
+**Project Status: SHIPPING READY + POST-LAUNCH ENHANCEMENTS** 🚀
 
 ## Timeline Estimate
 

@@ -530,20 +530,20 @@ export const staticDataService = {
     const insights = [];
 
     // 1. RANK-BASED INSIGHTS
-    rankInsights = await this._generateRankInsights(accounts, selectedMonth);
+    const rankInsights = await this._generateRankInsights(accounts, selectedMonth);
     insights.push(...rankInsights);
 
     // 2. TREND INSIGHTS (if multiple months available)
     const allAccounts = await loadAllAccounts();
-    trendInsights = await this._generateTrendInsights(accounts, selectedMonth, allAccounts);
+    const trendInsights = await this._generateTrendInsights(accounts, selectedMonth, allAccounts);
     insights.push(...trendInsights);
 
     // 3. ANOMALY INSIGHTS
-    anomalyInsights = await this._generateAnomalyInsights(accounts);
+    const anomalyInsights = await this._generateAnomalyInsights(accounts);
     insights.push(...anomalyInsights);
 
     // 4. COMPARATIVE INSIGHTS
-    comparativeInsights = await this._generateComparativeInsights(accounts);
+    const comparativeInsights = await this._generateComparativeInsights(accounts);
     insights.push(...comparativeInsights);
 
     // Return top 3 insights by relevance
