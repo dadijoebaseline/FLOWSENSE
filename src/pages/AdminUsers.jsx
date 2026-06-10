@@ -28,7 +28,20 @@ export default function AdminUsers() {
       if (!response.ok) {
         // 404 expected on static deployment (no backend API)
         if (response.status === 404) {
-          throw new Error('Admin API not available in static deployment. User management requires backend.');
+          // Fallback: Get current user from AuthContext
+          if (user) {
+            setUsers([
+              {
+                id: user.uid,
+                email: user.email,
+                displayName: user.displayName,
+                role: user.role,
+                createdAt: new Date().toISOString(),
+                isCurrentUser: true,
+              },
+            ]);
+          }
+          return;
         }
         const data = await response.json().catch(() => ({}));
         throw new Error(data.error || 'Unable to load users');
@@ -148,7 +161,7 @@ export default function AdminUsers() {
             <div>
               <p className="text-sm uppercase tracking-[0.3em] text-sky-300">User management</p>
               <h1 className="mt-2 text-3xl font-semibold text-white">Manage application users</h1>
-              <p className="mt-2 text-sm text-slate-400">Edit user roles, remove users, or ban/unban accounts.</p>
+              <p className="mt-2 text-sm text-slate-400">View authenticated users and manage roles (requires backend for full management).</p>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row">
               <button
@@ -192,10 +205,18 @@ export default function AdminUsers() {
             </div>
           ) : (
             <div className="space-y-4">
+              {users.some(u => u.isCurrentUser) && (
+                <div className="rounded-2xl border border-blue-800 bg-blue-950/40 px-4 py-3 text-sm text-blue-300">
+                  📌 Static deployment: Showing authenticated Firebase users. Full user management requires backend API.
+                </div>
+              )}
               {users.map((appUser) => (
                 <div key={appUser.id} className="rounded-3xl border border-slate-800 bg-slate-950/80 p-5 sm:flex sm:items-center sm:justify-between">
                   <div className="space-y-2">
-                    <p className="text-sm font-semibold text-white">{appUser.name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold text-white">{appUser.displayName || appUser.email.split('@')[0]}</p>
+                      {appUser.isCurrentUser && <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded">Current User</span>}
+                    </div>
                     <p className="text-sm text-slate-400">{appUser.email}</p>
                     <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
                       Role: <span className="font-medium text-slate-200">{appUser.role}</span>
@@ -207,7 +228,8 @@ export default function AdminUsers() {
                       value={appUser.role}
                       onChange={(event) => handleUpdate(appUser.id, { role: event.target.value })}
                       className="rounded-2xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none"
-                      disabled={appUser.email === user.email}
+                      disabled={appUser.isCurrentUser || appUser.email === user.email}
+                      title={appUser.isCurrentUser ? 'Read-only on static deployment' : 'Manage role'}
                     >
                       {appUser.email === user.email ? (
                         <option value={appUser.role}>{appUser.role}</option>
@@ -220,15 +242,18 @@ export default function AdminUsers() {
                     <button
                       type="button"
                       onClick={() => handleUpdate(appUser.id, { banned: !appUser.banned })}
-                      className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${appUser.banned ? 'bg-emerald-500 text-white hover:bg-emerald-400' : 'bg-yellow-500 text-slate-950 hover:bg-yellow-400'}`}
+                      className={`rounded-2xl px-4 py-2 text-sm font-semibold transition opacity-50 cursor-not-allowed ${appUser.banned ? 'bg-emerald-500 text-white' : 'bg-yellow-500 text-slate-950'}`}
+                      disabled={appUser.isCurrentUser}
+                      title="Disabled on static deployment"
                     >
                       {appUser.banned ? 'Unban' : 'Ban'}
                     </button>
                     <button
                       type="button"
                       onClick={() => handleDelete(appUser.id)}
-                      className="rounded-2xl bg-rose-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-400"
-                      disabled={appUser.email === user.email}
+                      className="rounded-2xl bg-rose-500 px-4 py-2 text-sm font-semibold text-white transition opacity-50 cursor-not-allowed"
+                      disabled={appUser.isCurrentUser || appUser.email === user.email}
+                      title="Disabled on static deployment"
                     >
                       Remove
                     </button>
