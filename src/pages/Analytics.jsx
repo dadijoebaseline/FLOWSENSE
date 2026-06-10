@@ -16,11 +16,13 @@ import {
 } from 'lucide-react';
 import { staticDataService } from '../lib/staticDataService';
 import { getClassificationName } from '../lib/rateCodeMap';
+import { useAnalyticsFilters } from '../hooks/useAnalyticsFilters';
 import ConsumptionAnalytics from '../components/analytics/ConsumptionAnalytics';
 import RevenueAnalytics from '../components/analytics/RevenueAnalytics';
 import AreaAnalytics from '../components/analytics/AreaAnalytics';
 import RouteAnalytics from '../components/analytics/RouteAnalytics';
 import StatusClassificationAnalytics from '../components/analytics/StatusClassificationAnalytics';
+import { FilterPanel } from '../components/analytics/FilterPanel';
 
 const TABS = [
   { id: 'kpi', label: 'Dashboard', icon: '📊' },
@@ -85,6 +87,21 @@ export default function Analytics() {
   const [monthOptions, setMonthOptions] = useState([]);
   const [activeTab, setActiveTab] = useState('kpi');
 
+  // Initialize filter hook
+  const {
+    filters,
+    toggleArea,
+    toggleRoute,
+    toggleStatus,
+    toggleClassification,
+    setConsumptionRange,
+    setRevenueRange,
+    resetFilters,
+    removeFilter,
+    applyFilters,
+    hasActiveFilters,
+  } = useAnalyticsFilters();
+
   // Load available months
   useEffect(() => {
     const months = staticDataService.getAvailableMonths();
@@ -93,6 +110,32 @@ export default function Analytics() {
       setSelectedMonth(months[months.length - 1]); // Default to latest month
     }
   }, [selectedMonth]);
+
+  // Fetch all accounts for filtering
+  const { data: allAccounts = [] } = useQuery({
+    queryKey: ['allAccounts'],
+    queryFn: async () => {
+      const accounts = [];
+      for (const month of staticDataService.getAvailableMonths()) {
+        const data = await staticDataService.getGeoJSONData(month);
+        if (data.features) {
+          accounts.push(
+            ...data.features.map((f) => ({
+              ...f.properties,
+              datasetId: month,
+            }))
+          );
+        }
+      }
+      return accounts;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Apply filters to accounts
+  const filteredAccounts = useMemo(() => {
+    return applyFilters(allAccounts);
+  }, [allAccounts, applyFilters]);
 
   // Fetch KPI metrics
   const { data: kpiMetrics, isLoading: isLoadingKPI, error: errorKPI } = useQuery({
@@ -156,6 +199,11 @@ export default function Analytics() {
         <h1 className="text-4xl font-bold text-white">Analytics Dashboard</h1>
         <p className="text-slate-400">
           Temporal analysis of water consumption, revenue, and account metrics
+          {hasActiveFilters && (
+            <span className="ml-2 text-blue-400">
+              ({filteredAccounts.length} accounts matching filters)
+            </span>
+          )}
         </p>
       </motion.div>
 
@@ -183,6 +231,21 @@ export default function Analytics() {
           </select>
         </div>
       </motion.div>
+
+      {/* Filter Panel */}
+      <FilterPanel
+        filters={filters}
+        onToggleArea={toggleArea}
+        onToggleRoute={toggleRoute}
+        onToggleStatus={toggleStatus}
+        onToggleClassification={toggleClassification}
+        setConsumptionRange={setConsumptionRange}
+        setRevenueRange={setRevenueRange}
+        resetFilters={resetFilters}
+        removeFilter={removeFilter}
+        matchCount={filteredAccounts.length}
+        totalCount={allAccounts.length}
+      />
 
       {/* Tab Navigation */}
       <motion.div
@@ -248,27 +311,27 @@ export default function Analytics() {
 
         {/* Consumption Analytics Tab */}
         {activeTab === 'consumption' && selectedMonth && (
-          <ConsumptionAnalytics selectedMonth={selectedMonth} />
+          <ConsumptionAnalytics selectedMonth={selectedMonth} filteredAccounts={filteredAccounts} />
         )}
 
         {/* Revenue Analytics Tab */}
         {activeTab === 'revenue' && selectedMonth && (
-          <RevenueAnalytics selectedMonth={selectedMonth} />
+          <RevenueAnalytics selectedMonth={selectedMonth} filteredAccounts={filteredAccounts} />
         )}
 
         {/* Area Analytics Tab */}
         {activeTab === 'area' && selectedMonth && (
-          <AreaAnalytics selectedMonth={selectedMonth} />
+          <AreaAnalytics selectedMonth={selectedMonth} filteredAccounts={filteredAccounts} />
         )}
 
         {/* Route Analytics Tab */}
         {activeTab === 'route' && selectedMonth && (
-          <RouteAnalytics selectedMonth={selectedMonth} />
+          <RouteAnalytics selectedMonth={selectedMonth} filteredAccounts={filteredAccounts} />
         )}
 
         {/* Status & Classification Tab */}
         {activeTab === 'status' && selectedMonth && (
-          <StatusClassificationAnalytics selectedMonth={selectedMonth} />
+          <StatusClassificationAnalytics selectedMonth={selectedMonth} filteredAccounts={filteredAccounts} />
         )}
       </motion.div>
     </div>
