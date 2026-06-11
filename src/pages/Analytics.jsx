@@ -382,99 +382,265 @@ export default function Analytics() {
             animate={{ opacity: 1 }}
             className="space-y-6"
           >
-            {/* Anomaly Impact Overview */}
-            <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg border border-orange-200 p-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">Anomaly Impact Analysis</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="bg-white rounded-lg p-4 border border-orange-200">
-                  <p className="text-sm text-gray-600 mb-1">Accounts Affected by Anomalies</p>
-                  <p className="text-3xl font-bold text-orange-600">
-                    {comparativeAnalysis.anomalyAccountPercentage}%
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {comparativeAnalysis.anomalousAccounts} of {comparativeAnalysis.totalAccounts} accounts
+            {/* Executive Summary - Impact Overview */}
+            <div className="bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 rounded-xl border-2 border-orange-300 p-8 shadow-lg">
+              <div className="flex items-start justify-between mb-6">
+                <div>
+                  <h2 className="text-3xl font-bold text-gray-900 mb-2">⚠️ Anomaly Impact Analysis</h2>
+                  <p className="text-gray-700 text-sm">Understanding the scope and severity of anomalies in your system</p>
+                </div>
+              </div>
+
+              {/* Key Impact Metrics */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                {/* Accounts Affected */}
+                <div className="bg-white rounded-xl p-5 border-l-4 border-orange-500 shadow-md hover:shadow-lg transition">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-semibold text-gray-700">ACCOUNTS AFFECTED</h3>
+                    <span className="text-2xl">👥</span>
+                  </div>
+                  <div className="mb-3">
+                    <p className="text-4xl font-bold text-orange-600">{comparativeAnalysis.anomalyAccountPercentage}%</p>
+                    <p className="text-sm text-gray-600 font-medium mt-1">{comparativeAnalysis.anomalousAccounts} out of {comparativeAnalysis.totalAccounts}</p>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-orange-500 h-2 rounded-full" 
+                      style={{ width: `${comparativeAnalysis.anomalyAccountPercentage}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    {comparativeAnalysis.normalAccounts} normal accounts ({comparativeAnalysis.normalAccountPercentage}%)
                   </p>
                 </div>
-                <div className="bg-white rounded-lg p-4 border border-red-200">
-                  <p className="text-sm text-gray-600 mb-1">Consumption from Anomalies</p>
-                  <p className="text-3xl font-bold text-red-600">
-                    {comparativeAnalysis.anomalyConsumptionPercentage}%
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {comparativeAnalysis.anomalousConsumption?.toLocaleString()} of {comparativeAnalysis.totalConsumption?.toLocaleString()} cu.m
+
+                {/* Consumption Impact */}
+                <div className="bg-white rounded-xl p-5 border-l-4 border-red-500 shadow-md hover:shadow-lg transition">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-semibold text-gray-700">CONSUMPTION IMPACT</h3>
+                    <span className="text-2xl">💧</span>
+                  </div>
+                  <div className="mb-3">
+                    <p className="text-4xl font-bold text-red-600">{comparativeAnalysis.anomalyConsumptionPercentage}%</p>
+                    <p className="text-sm text-gray-600 font-medium mt-1">{(comparativeAnalysis.anomalousConsumption || 0).toLocaleString()} cu.m</p>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-red-500 h-2 rounded-full" 
+                      style={{ width: `${comparativeAnalysis.anomalyConsumptionPercentage}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Normal: {(comparativeAnalysis.normalConsumption || 0).toLocaleString()} cu.m ({comparativeAnalysis.normalConsumptionPercentage}%)
                   </p>
                 </div>
-                <div className="bg-white rounded-lg p-4 border border-rose-200">
-                  <p className="text-sm text-gray-600 mb-1">Revenue from Anomalies</p>
-                  <p className="text-3xl font-bold text-rose-600">
-                    {comparativeAnalysis.anomalyRevenuePercentage}%
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    ₱{comparativeAnalysis.anomalousRevenue?.toLocaleString()} of ₱{comparativeAnalysis.totalRevenue?.toLocaleString()}
+
+                {/* Revenue Impact */}
+                <div className="bg-white rounded-xl p-5 border-l-4 border-rose-500 shadow-md hover:shadow-lg transition">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-semibold text-gray-700">REVENUE IMPACT</h3>
+                    <span className="text-2xl">💰</span>
+                  </div>
+                  <div className="mb-3">
+                    <p className="text-4xl font-bold text-rose-600">{comparativeAnalysis.anomalyRevenuePercentage}%</p>
+                    <p className="text-sm text-gray-600 font-medium mt-1">₱{(comparativeAnalysis.anomalousRevenue || 0).toLocaleString()}</p>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-rose-500 h-2 rounded-full" 
+                      style={{ width: `${comparativeAnalysis.anomalyRevenuePercentage}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Normal: ₱{(comparativeAnalysis.normalRevenue || 0).toLocaleString()} ({comparativeAnalysis.normalRevenuePercentage}%)
                   </p>
                 </div>
               </div>
+
+              {/* Key Insights Summary */}
+              <div className="bg-white rounded-lg p-4 border border-orange-200">
+                <h4 className="font-semibold text-gray-800 mb-3 text-sm uppercase">🔍 Key Insights</h4>
+                <ul className="space-y-2 text-sm text-gray-700">
+                  <li className="flex items-start">
+                    <span className="text-orange-500 font-bold mr-2">•</span>
+                    <span><strong>{comparativeAnalysis.anomalousAccounts}</strong> accounts ({comparativeAnalysis.anomalyAccountPercentage}%) are flagged as anomalous across all statuses and classifications</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-red-500 font-bold mr-2">•</span>
+                    <span>Anomalies account for <strong>{comparativeAnalysis.anomalyConsumptionPercentage}%</strong> of total consumption ({(comparativeAnalysis.anomalousConsumption || 0).toLocaleString()} cu.m), indicating {'lower' in comparativeAnalysis && comparativeAnalysis.anomalyConsumptionPercentage < 5 ? 'localized' : 'widespread'} usage anomalies</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-rose-500 font-bold mr-2">•</span>
+                    <span>Revenue impact is <strong>{comparativeAnalysis.anomalyRevenuePercentage}%</strong>, representing potential billing discrepancies worth ₱{(comparativeAnalysis.anomalousRevenue || 0).toLocaleString()}</span>
+                  </li>
+                </ul>
+              </div>
             </div>
 
-            {/* Status Distribution */}
+            {/* Anomaly Rate by Status - More Detailed */}
             {comparativeAnalysis.anomalyRateByStatus && (
-              <div className="bg-white rounded-lg border border-slate-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Anomaly Rate by Status</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-md">
+                <h3 className="text-xl font-bold text-gray-800 mb-2">Anomaly Rate by Account Status</h3>
+                <p className="text-sm text-gray-600 mb-4">How many accounts in each status category are anomalous</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {Object.entries(comparativeAnalysis.anomalyRateByStatus).map(([status, data]) => (
-                    <div key={status} className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-                      <p className="font-semibold text-gray-800">{status}</p>
-                      <p className="text-2xl font-bold text-blue-600 mt-2">{data.anomalyRate}%</p>
-                      <p className="text-xs text-gray-600 mt-1">
-                        {data.anomalous} of {data.total} accounts
-                      </p>
+                    <div key={status} className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200 hover:border-blue-400 transition">
+                      <div className="flex justify-between items-start mb-3">
+                        <p className="font-bold text-gray-900 text-lg">{status}</p>
+                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded font-semibold">{data.anomalyRate}% anomalous</span>
+                      </div>
+                      <div className="space-y-2">
+                        <div>
+                          <div className="flex justify-between text-xs mb-1">
+                            <span className="text-gray-700">Total Accounts</span>
+                            <span className="font-semibold">{data.total}</span>
+                          </div>
+                          <div className="w-full bg-gray-300 rounded-full h-2">
+                            <div className="bg-blue-500 h-2 rounded-full" style={{ width: '100%' }} />
+                          </div>
+                        </div>
+                        <div>
+                          <div className="flex justify-between text-xs mb-1">
+                            <span className="text-gray-700">Anomalous</span>
+                            <span className="font-semibold text-red-600">{data.anomalous}</span>
+                          </div>
+                          <div className="w-full bg-gray-300 rounded-full h-2">
+                            <div className="bg-red-500 h-2 rounded-full" style={{ width: `${(data.anomalous / data.total) * 100}%` }} />
+                          </div>
+                        </div>
+                        <div>
+                          <div className="flex justify-between text-xs mb-1">
+                            <span className="text-gray-700">Normal</span>
+                            <span className="font-semibold text-green-600">{data.total - data.anomalous}</span>
+                          </div>
+                          <div className="w-full bg-gray-300 rounded-full h-2">
+                            <div className="bg-green-500 h-2 rounded-full" style={{ width: `${((data.total - data.anomalous) / data.total) * 100}%` }} />
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Classification Distribution (top anomaly rates) */}
+            {/* Classification Distribution - Top Anomaly Risks */}
             {comparativeAnalysis.anomalyRateByClassification && (
-              <div className="bg-white rounded-lg border border-slate-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Anomaly Rate by Classification (Top 10)</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-md">
+                <h3 className="text-xl font-bold text-gray-800 mb-2">Anomaly Rate by Classification (Top 12)</h3>
+                <p className="text-sm text-gray-600 mb-4">Which customer types have the highest anomaly rates</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {Object.entries(comparativeAnalysis.anomalyRateByClassification)
                     .sort(([, a], [, b]) => b.anomalyRate - a.anomalyRate)
-                    .slice(0, 10)
-                    .map(([rateCode, data]) => (
-                      <div key={rateCode} className="bg-slate-50 rounded-lg p-3 border border-slate-200">
-                        <p className="font-semibold text-gray-700">{getClassificationName(rateCode)}</p>
-                        <p className="text-lg font-bold text-red-600">{data.anomalyRate}%</p>
-                        <p className="text-xs text-gray-600">
-                          {data.anomalous}/{data.total}
-                        </p>
-                      </div>
-                    ))}
+                    .slice(0, 12)
+                    .map(([rateCode, data], idx) => {
+                      const severity = data.anomalyRate > 15 ? 'critical' : data.anomalyRate > 8 ? 'high' : data.anomalyRate > 3 ? 'medium' : 'low';
+                      const severityColor = severity === 'critical' ? 'bg-red-100 border-red-300 text-red-700' 
+                                           : severity === 'high' ? 'bg-orange-100 border-orange-300 text-orange-700'
+                                           : severity === 'medium' ? 'bg-yellow-100 border-yellow-300 text-yellow-700'
+                                           : 'bg-green-100 border-green-300 text-green-700';
+                      return (
+                        <div key={rateCode} className={`rounded-lg p-4 border-l-4 ${severityColor} bg-white border`}>
+                          <div className="flex justify-between items-start mb-2">
+                            <p className="font-bold text-gray-900">{getClassificationName(rateCode)}</p>
+                            <span className={`text-xs font-bold px-2 py-0.5 rounded ${severityColor}`}>{data.anomalyRate}%</span>
+                          </div>
+                          <div className="text-sm text-gray-700 mb-2">
+                            <p><span className="font-semibold text-red-600">{data.anomalous}</span> anomalous of <span className="font-semibold">{data.total}</span> total</p>
+                          </div>
+                          <div className="w-full bg-gray-300 rounded-full h-1.5">
+                            <div 
+                              className={`h-1.5 rounded-full ${severity === 'critical' ? 'bg-red-600' : severity === 'high' ? 'bg-orange-600' : severity === 'medium' ? 'bg-yellow-600' : 'bg-green-600'}`}
+                              style={{ width: `${data.anomalyRate}%`, maxWidth: '100%' }} 
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
                 </div>
               </div>
             )}
 
-            {/* Normal vs Anomalous Summary */}
+            {/* Comparative Analysis Summary */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-green-50 rounded-lg border border-green-200 p-6">
-                <h3 className="text-lg font-semibold text-green-800 mb-4">📈 Normal Accounts (Healthy Baseline)</h3>
-                <div className="space-y-2">
-                  <p className="text-sm text-gray-700"><span className="font-semibold">{comparativeAnalysis.normalAccountPercentage}%</span> of accounts</p>
-                  <p className="text-sm text-gray-700"><span className="font-semibold">{comparativeAnalysis.normalConsumptionPercentage}%</span> of consumption</p>
-                  <p className="text-sm text-gray-700"><span className="font-semibold">{comparativeAnalysis.normalRevenuePercentage}%</span> of revenue</p>
-                  <p className="text-xs text-gray-600 mt-2">Avg: {comparativeAnalysis.totalConsumption > 0 ? (comparativeAnalysis.normalConsumption / comparativeAnalysis.normalAccounts).toFixed(1) : 0} cu.m/account</p>
+              {/* Normal Accounts Detail */}
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border-2 border-green-300 p-6 shadow-md">
+                <h3 className="text-lg font-bold text-green-900 mb-4 flex items-center">
+                  <span className="text-3xl mr-2">✅</span>
+                  Normal Accounts (Healthy Baseline)
+                </h3>
+                <div className="space-y-4">
+                  <div className="bg-white rounded-lg p-3 border border-green-200">
+                    <p className="text-xs text-gray-600 mb-1">Account Distribution</p>
+                    <p className="text-3xl font-bold text-green-700">{comparativeAnalysis.normalAccountPercentage}%</p>
+                    <p className="text-sm text-gray-700 mt-1">{comparativeAnalysis.normalAccounts} accounts operating normally</p>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 border border-green-200">
+                    <p className="text-xs text-gray-600 mb-1">Consumption</p>
+                    <p className="text-2xl font-bold text-green-700">{comparativeAnalysis.normalConsumptionPercentage}%</p>
+                    <p className="text-sm text-gray-700 mt-1">{(comparativeAnalysis.normalConsumption || 0).toLocaleString()} cu.m total</p>
+                    <p className="text-xs text-gray-600 mt-2">
+                      Avg: {comparativeAnalysis.totalConsumption > 0 && comparativeAnalysis.normalAccounts > 0 ? ((comparativeAnalysis.normalConsumption || 0) / (comparativeAnalysis.normalAccounts || 1)).toFixed(2) : 0} cu.m/account
+                    </p>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 border border-green-200">
+                    <p className="text-xs text-gray-600 mb-1">Revenue</p>
+                    <p className="text-2xl font-bold text-green-700">{comparativeAnalysis.normalRevenuePercentage}%</p>
+                    <p className="text-sm text-gray-700 mt-1">₱{(comparativeAnalysis.normalRevenue || 0).toLocaleString()}</p>
+                  </div>
                 </div>
               </div>
-              <div className="bg-red-50 rounded-lg border border-red-200 p-6">
-                <h3 className="text-lg font-semibold text-red-800 mb-4">⚠️ Anomalous Accounts (Problem Cases)</h3>
-                <div className="space-y-2">
-                  <p className="text-sm text-gray-700"><span className="font-semibold">{comparativeAnalysis.anomalyAccountPercentage}%</span> of accounts</p>
-                  <p className="text-sm text-gray-700"><span className="font-semibold">{comparativeAnalysis.anomalyConsumptionPercentage}%</span> of consumption</p>
-                  <p className="text-sm text-gray-700"><span className="font-semibold">{comparativeAnalysis.anomalyRevenuePercentage}%</span> of revenue</p>
-                  <p className="text-xs text-gray-600 mt-2">Avg: {comparativeAnalysis.totalConsumption > 0 ? (comparativeAnalysis.anomalousConsumption / comparativeAnalysis.anomalousAccounts).toFixed(1) : 0} cu.m/account</p>
+
+              {/* Anomalous Accounts Detail */}
+              <div className="bg-gradient-to-br from-red-50 to-rose-50 rounded-xl border-2 border-red-300 p-6 shadow-md">
+                <h3 className="text-lg font-bold text-red-900 mb-4 flex items-center">
+                  <span className="text-3xl mr-2">⚠️</span>
+                  Anomalous Accounts (Problem Cases)
+                </h3>
+                <div className="space-y-4">
+                  <div className="bg-white rounded-lg p-3 border border-red-200">
+                    <p className="text-xs text-gray-600 mb-1">Account Distribution</p>
+                    <p className="text-3xl font-bold text-red-700">{comparativeAnalysis.anomalyAccountPercentage}%</p>
+                    <p className="text-sm text-gray-700 mt-1">{comparativeAnalysis.anomalousAccounts} accounts flagged</p>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 border border-red-200">
+                    <p className="text-xs text-gray-600 mb-1">Consumption</p>
+                    <p className="text-2xl font-bold text-red-700">{comparativeAnalysis.anomalyConsumptionPercentage}%</p>
+                    <p className="text-sm text-gray-700 mt-1">{(comparativeAnalysis.anomalousConsumption || 0).toLocaleString()} cu.m total</p>
+                    <p className="text-xs text-gray-600 mt-2">
+                      Avg: {comparativeAnalysis.totalConsumption > 0 && comparativeAnalysis.anomalousAccounts > 0 ? ((comparativeAnalysis.anomalousConsumption || 0) / (comparativeAnalysis.anomalousAccounts || 1)).toFixed(2) : 0} cu.m/account
+                    </p>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 border border-red-200">
+                    <p className="text-xs text-gray-600 mb-1">Revenue</p>
+                    <p className="text-2xl font-bold text-red-700">{comparativeAnalysis.anomalyRevenuePercentage}%</p>
+                    <p className="text-sm text-gray-700 mt-1">₱{(comparativeAnalysis.anomalousRevenue || 0).toLocaleString()}</p>
+                  </div>
                 </div>
               </div>
+            </div>
+
+            {/* Priority Actions */}
+            <div className="bg-blue-50 rounded-xl border-2 border-blue-300 p-6">
+              <h3 className="text-lg font-bold text-blue-900 mb-4">📋 Recommended Actions</h3>
+              <ul className="space-y-2 text-sm text-blue-900">
+                <li className="flex items-start">
+                  <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-blue-500 text-white text-xs font-bold mr-2 flex-shrink-0">1</span>
+                  <span><strong>Review High-Risk Classifications:</strong> Focus on classifications with anomaly rates above 15% for immediate investigation</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-blue-500 text-white text-xs font-bold mr-2 flex-shrink-0">2</span>
+                  <span><strong>Account Status Analysis:</strong> {Object.entries(comparativeAnalysis.anomalyRateByStatus).length > 0 ? `Check which status group (${Object.entries(comparativeAnalysis.anomalyRateByStatus).map(([s, d]) => `${s}: ${d.anomalyRate}%`).join(', ')}) needs attention` : 'Check which status group needs attention'}</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-blue-500 text-white text-xs font-bold mr-2 flex-shrink-0">3</span>
+                  <span><strong>Use Anomalies Tab:</strong> View detailed list of {comparativeAnalysis.anomalousAccounts} flagged accounts with specific anomaly details and root causes</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-blue-500 text-white text-xs font-bold mr-2 flex-shrink-0">4</span>
+                  <span><strong>Revenue Recovery:</strong> Potential ₱{(comparativeAnalysis.anomalousRevenue || 0).toLocaleString()} in billing discrepancies worth investigating</span>
+                </li>
+              </ul>
             </div>
           </motion.div>
         )}
