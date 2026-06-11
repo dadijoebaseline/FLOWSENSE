@@ -13,7 +13,8 @@ const getRoleFromEmail = (email) => (normalizeEmail(email) === ADMIN_EMAIL ? 'ad
 // Fetch user's role from Firestore flowsense_users collection
 const getRoleFromFirestore = async (userEmail) => {
   try {
-    const userRef = doc(firestore, 'flowsense_users', userEmail);
+    const normalizedEmail = normalizeEmail(userEmail);
+    const userRef = doc(firestore, 'flowsense_users', normalizedEmail);
     const userSnap = await getDoc(userRef);
     if (userSnap.exists()) {
       const userData = userSnap.data();
