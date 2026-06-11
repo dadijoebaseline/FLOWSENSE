@@ -12,7 +12,7 @@ export const ROLE_PERMISSIONS = {
     canTriggerDetection: true,
   },
   manager: {
-    canViewAnalytics: false,
+    canViewAnalytics: true,
     canViewDashboard: true,
     canViewMap: true,
     canViewAnomalyList: true,
