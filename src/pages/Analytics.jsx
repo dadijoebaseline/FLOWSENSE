@@ -541,19 +541,6 @@ export default function Analytics() {
         ))}
       </motion.div>
 
-      {/* Error State */}
-      {errorKPI && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="rounded-lg bg-red-500/10 border border-red-500/20 p-4"
-        >
-          <p className="text-red-400 text-sm">
-            Error loading analytics data: {errorKPI.message}
-          </p>
-        </motion.div>
-      )}
-
       {/* Tab Content */}
       <motion.div
         key={activeTab}
