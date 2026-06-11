@@ -241,164 +241,263 @@ export const staticDataService = {
   },
 
   /**
-   * Get consumption aggregated by area per month
-   * Returns: { area: { month: { total, avg, count, min, max } } }
+   * Get consumption aggregated by area for a specific month or all months
+   * Returns: { area: { total, avg, count, min, max } } if month specified
+   * Returns: { area: { month: { total, avg, count, min, max } } } if month not specified
+   * @param {string} [month] - Optional specific month to filter by
    * @returns {Promise<Object>}
    */
-  async getConsumptionByAreaPerMonth() {
+  async getConsumptionByAreaPerMonth(month = null) {
     const allAccounts = await loadAllAccounts();
-    const result = {};
+    
+    // Filter by month if provided
+    const accountsToAnalyze = month
+      ? allAccounts.filter(a => a.datasetId === month)
+      : allAccounts;
 
-    for (const account of allAccounts) {
-      if (!account.area || account.cumUsed === undefined) continue;
-
-      const area = account.area;
-      const month = account.datasetId;
-      const consumption = Number(account.cumUsed) || 0;
-
-      if (!result[area]) result[area] = {};
-      if (!result[area][month]) {
-        result[area][month] = {
-          total: 0,
-          count: 0,
-          values: [],
-        };
+    if (month) {
+      // Return data for single month
+      const result = {};
+      for (const account of accountsToAnalyze) {
+        if (!account.area || account.cumUsed === undefined) continue;
+        const area = account.area;
+        const consumption = Number(account.cumUsed) || 0;
+        if (!result[area]) {
+          result[area] = { total: 0, count: 0, values: [] };
+        }
+        result[area].total += consumption;
+        result[area].count += 1;
+        result[area].values.push(consumption);
       }
-
-      result[area][month].total += consumption;
-      result[area][month].count += 1;
-      result[area][month].values.push(consumption);
-    }
-
-    // Calculate avg, min, max
-    for (const area in result) {
-      for (const month in result[area]) {
-        const data = result[area][month];
-        data.avg = data.total / data.count;
-        data.min = Math.min(...data.values);
-        data.max = Math.max(...data.values);
-        delete data.values; // Remove raw values
-      }
-    }
-
-    return result;
-  },
-
-  /**
-   * Get revenue aggregated by route (bookNo) per month
-   * Returns: { route: { month: { total, avg, count, min, max } } }
-   * @returns {Promise<Object>}
-   */
-  async getRevenueByRoutePerMonth() {
-    const allAccounts = await loadAllAccounts();
-    const result = {};
-
-    for (const account of allAccounts) {
-      if (!account.bookNo || account.billAmount === undefined) continue;
-
-      const route = account.bookNo;
-      const month = account.datasetId;
-      const revenue = Number(account.billAmount) || 0;
-
-      if (!result[route]) result[route] = {};
-      if (!result[route][month]) {
-        result[route][month] = {
-          total: 0,
-          count: 0,
-          values: [],
-        };
-      }
-
-      result[route][month].total += revenue;
-      result[route][month].count += 1;
-      result[route][month].values.push(revenue);
-    }
-
-    // Calculate avg, min, max
-    for (const route in result) {
-      for (const month in result[route]) {
-        const data = result[route][month];
+      // Calculate avg, min, max
+      for (const area in result) {
+        const data = result[area];
         data.avg = data.total / data.count;
         data.min = Math.min(...data.values);
         data.max = Math.max(...data.values);
         delete data.values;
       }
+      return result;
+    } else {
+      // Return data grouped by month (original behavior)
+      const result = {};
+      for (const account of allAccounts) {
+        if (!account.area || account.cumUsed === undefined) continue;
+        const area = account.area;
+        const monthData = account.datasetId;
+        const consumption = Number(account.cumUsed) || 0;
+        if (!result[area]) result[area] = {};
+        if (!result[area][monthData]) {
+          result[area][monthData] = { total: 0, count: 0, values: [] };
+        }
+        result[area][monthData].total += consumption;
+        result[area][monthData].count += 1;
+        result[area][monthData].values.push(consumption);
+      }
+      // Calculate avg, min, max
+      for (const area in result) {
+        for (const monthData in result[area]) {
+          const data = result[area][monthData];
+          data.avg = data.total / data.count;
+          data.min = Math.min(...data.values);
+          data.max = Math.max(...data.values);
+          delete data.values;
+        }
+      }
+      return result;
     }
-
-    return result;
   },
 
   /**
-   * Get account counts aggregated by status per month
-   * Returns: { status: { month: { count } } }
+   * Get revenue aggregated by route (bookNo) for a specific month or all months
+   * Returns: { route: { total, avg, count, min, max } } if month specified
+   * Returns: { route: { month: { total, avg, count, min, max } } } if month not specified
+   * @param {string} [month] - Optional specific month to filter by
    * @returns {Promise<Object>}
    */
-  async getAccountsByStatusPerMonth() {
+  async getRevenueByRoutePerMonth(month = null) {
     const allAccounts = await loadAllAccounts();
-    const result = {};
+    
+    // Filter by month if provided
+    const accountsToAnalyze = month
+      ? allAccounts.filter(a => a.datasetId === month)
+      : allAccounts;
 
-    for (const account of allAccounts) {
-      if (!account.status) continue;
-
-      const status = account.status;
-      const month = account.datasetId;
-
-      if (!result[status]) result[status] = {};
-      if (!result[status][month]) {
-        result[status][month] = { count: 0 };
+    if (month) {
+      // Return data for single month
+      const result = {};
+      for (const account of accountsToAnalyze) {
+        if (!account.bookNo || account.billAmount === undefined) continue;
+        const route = account.bookNo;
+        const revenue = Number(account.billAmount) || 0;
+        if (!result[route]) {
+          result[route] = { total: 0, count: 0, values: [] };
+        }
+        result[route].total += revenue;
+        result[route].count += 1;
+        result[route].values.push(revenue);
       }
-
-      result[status][month].count += 1;
+      // Calculate avg, min, max
+      for (const route in result) {
+        const data = result[route];
+        data.avg = data.total / data.count;
+        data.min = Math.min(...data.values);
+        data.max = Math.max(...data.values);
+        delete data.values;
+      }
+      return result;
+    } else {
+      // Return data grouped by month (original behavior)
+      const result = {};
+      for (const account of allAccounts) {
+        if (!account.bookNo || account.billAmount === undefined) continue;
+        const route = account.bookNo;
+        const monthData = account.datasetId;
+        const revenue = Number(account.billAmount) || 0;
+        if (!result[route]) result[route] = {};
+        if (!result[route][monthData]) {
+          result[route][monthData] = { total: 0, count: 0, values: [] };
+        }
+        result[route][monthData].total += revenue;
+        result[route][monthData].count += 1;
+        result[route][monthData].values.push(revenue);
+      }
+      // Calculate avg, min, max
+      for (const route in result) {
+        for (const monthData in result[route]) {
+          const data = result[route][monthData];
+          data.avg = data.total / data.count;
+          data.min = Math.min(...data.values);
+          data.max = Math.max(...data.values);
+          delete data.values;
+        }
+      }
+      return result;
     }
-
-    return result;
   },
 
   /**
-   * Get metrics aggregated by classification (rateCode) per month
-   * Returns: { rateCode: { month: { consumption: { total, avg }, revenue: { total, avg }, count } } }
+   * Get account counts aggregated by status for a specific month or all months
+   * Returns: { status: { count } } if month specified
+   * Returns: { status: { month: { count } } } if month not specified
+   * @param {string} [month] - Optional specific month to filter by
    * @returns {Promise<Object>}
    */
-  async getMetricsByClassificationPerMonth() {
+  async getAccountsByStatusPerMonth(month = null) {
     const allAccounts = await loadAllAccounts();
-    const result = {};
+    
+    // Filter by month if provided
+    const accountsToAnalyze = month
+      ? allAccounts.filter(a => a.datasetId === month)
+      : allAccounts;
 
-    for (const account of allAccounts) {
-      if (!account.rateCode) continue;
-
-      const rateCode = account.rateCode;
-      const month = account.datasetId;
-      const consumption = Number(account.cumUsed) || 0;
-      const revenue = Number(account.billAmount) || 0;
-
-      if (!result[rateCode]) result[rateCode] = {};
-      if (!result[rateCode][month]) {
-        result[rateCode][month] = {
-          consumption: { total: 0, values: [] },
-          revenue: { total: 0, values: [] },
-          count: 0,
-        };
+    if (month) {
+      // Return data for single month
+      const result = {};
+      for (const account of accountsToAnalyze) {
+        if (!account.status) continue;
+        const status = account.status;
+        if (!result[status]) result[status] = { count: 0 };
+        result[status].count += 1;
       }
-
-      result[rateCode][month].consumption.total += consumption;
-      result[rateCode][month].consumption.values.push(consumption);
-      result[rateCode][month].revenue.total += revenue;
-      result[rateCode][month].revenue.values.push(revenue);
-      result[rateCode][month].count += 1;
+      return result;
+    } else {
+      // Return data grouped by month (original behavior)
+      const result = {};
+      for (const account of allAccounts) {
+        if (!account.status) continue;
+        const status = account.status;
+        const monthData = account.datasetId;
+        if (!result[status]) result[status] = {};
+        if (!result[status][monthData]) {
+          result[status][monthData] = { count: 0 };
+        }
+        result[status][monthData].count += 1;
+      }
+      return result;
     }
+  },
 
-    // Calculate averages
-    for (const rateCode in result) {
-      for (const month in result[rateCode]) {
-        const data = result[rateCode][month];
+  /**
+   * Get metrics aggregated by classification (rateCode) for a specific month or all months
+   * Returns: { rateCode: { consumption: { total, avg }, revenue: { total, avg }, count } } if month specified
+   * Returns: { rateCode: { month: { consumption: { total, avg }, revenue: { total, avg }, count } } } if month not specified
+   * @param {string} [month] - Optional specific month to filter by
+   * @returns {Promise<Object>}
+   */
+  async getMetricsByClassificationPerMonth(month = null) {
+    const allAccounts = await loadAllAccounts();
+    
+    // Filter by month if provided
+    const accountsToAnalyze = month
+      ? allAccounts.filter(a => a.datasetId === month)
+      : allAccounts;
+
+    if (month) {
+      // Return data for single month
+      const result = {};
+      for (const account of accountsToAnalyze) {
+        if (!account.rateCode) continue;
+        const rateCode = account.rateCode;
+        const consumption = Number(account.cumUsed) || 0;
+        const revenue = Number(account.billAmount) || 0;
+        if (!result[rateCode]) {
+          result[rateCode] = {
+            consumption: { total: 0, values: [] },
+            revenue: { total: 0, values: [] },
+            count: 0,
+          };
+        }
+        result[rateCode].consumption.total += consumption;
+        result[rateCode].consumption.values.push(consumption);
+        result[rateCode].revenue.total += revenue;
+        result[rateCode].revenue.values.push(revenue);
+        result[rateCode].count += 1;
+      }
+      // Calculate averages
+      for (const rateCode in result) {
+        const data = result[rateCode];
         data.consumption.avg = data.consumption.total / data.count;
         data.revenue.avg = data.revenue.total / data.count;
         delete data.consumption.values;
         delete data.revenue.values;
       }
+      return result;
+    } else {
+      // Return data grouped by month (original behavior)
+      const result = {};
+      for (const account of allAccounts) {
+        if (!account.rateCode) continue;
+        const rateCode = account.rateCode;
+        const monthData = account.datasetId;
+        const consumption = Number(account.cumUsed) || 0;
+        const revenue = Number(account.billAmount) || 0;
+        if (!result[rateCode]) result[rateCode] = {};
+        if (!result[rateCode][monthData]) {
+          result[rateCode][monthData] = {
+            consumption: { total: 0, values: [] },
+            revenue: { total: 0, values: [] },
+            count: 0,
+          };
+        }
+        result[rateCode][monthData].consumption.total += consumption;
+        result[rateCode][monthData].consumption.values.push(consumption);
+        result[rateCode][monthData].revenue.total += revenue;
+        result[rateCode][monthData].revenue.values.push(revenue);
+        result[rateCode][monthData].count += 1;
+      }
+      // Calculate averages
+      for (const rateCode in result) {
+        for (const monthData in result[rateCode]) {
+          const data = result[rateCode][monthData];
+          data.consumption.avg = data.consumption.total / data.count;
+          data.revenue.avg = data.revenue.total / data.count;
+          delete data.consumption.values;
+          delete data.revenue.values;
+        }
+      }
+      return result;
     }
-
-    return result;
   },
 
   /**
@@ -1004,10 +1103,16 @@ export const staticDataService = {
   /**
    * Get comprehensive data distribution analysis
    * Includes status distribution, classification distribution, consumption ranges
+   * @param {string} [month] - Optional specific month to filter by
    * @returns {Promise<Object>} Distribution metrics
    */
-  async getDataDistribution() {
+  async getDataDistribution(month = null) {
     const allAccounts = await loadAllAccounts();
+    
+    // Filter by month if provided
+    const accountsToAnalyze = month
+      ? allAccounts.filter(a => a.datasetId === month)
+      : allAccounts;
 
     // Status distribution
     const statusCounts = {};
@@ -1023,7 +1128,7 @@ export const staticDataService = {
     const consumptionValues = [];
     const revenueValues = [];
 
-    for (const account of allAccounts) {
+    for (const account of accountsToAnalyze) {
       if (!account.accountId) continue;
 
       const consumption = Number(account.cumUsed) || 0;
@@ -1062,7 +1167,7 @@ export const staticDataService = {
       statusDistribution: Object.entries(statusCounts).map(([status, count]) => ({
         status,
         count,
-        percentage: (count / allAccounts.length) * 100,
+        percentage: (count / accountsToAnalyze.length) * 100,
         totalConsumption: Math.round(statusConsumption[status] * 100) / 100,
         totalRevenue: Math.round(statusRevenue[status] * 100) / 100,
         avgConsumption: count > 0 ? Math.round((statusConsumption[status] / count) * 100) / 100 : 0,
@@ -1073,7 +1178,7 @@ export const staticDataService = {
       classificationDistribution: Object.entries(classificationCounts).map(([rateCode, count]) => ({
         rateCode,
         count,
-        percentage: (count / allAccounts.length) * 100,
+        percentage: (count / accountsToAnalyze.length) * 100,
         totalConsumption: Math.round(classificationConsumption[rateCode] * 100) / 100,
         totalRevenue: Math.round(classificationRevenue[rateCode] * 100) / 100,
         avgConsumption: count > 0 ? Math.round((classificationConsumption[rateCode] / count) * 100) / 100 : 0,
@@ -1100,7 +1205,7 @@ export const staticDataService = {
         mean: sortedRevenue.reduce((a, b) => a + b, 0) / sortedRevenue.length,
       },
 
-      totalAccounts: allAccounts.length,
+      totalAccounts: accountsToAnalyze.length,
     };
   },
 };

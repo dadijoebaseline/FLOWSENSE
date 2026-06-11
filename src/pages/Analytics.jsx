@@ -191,11 +191,12 @@ export default function Analytics() {
     enabled: !!selectedMonth,
   });
 
-  // Fetch data distribution metrics
+  // Fetch data distribution metrics for selected month
   const { data: dataDistribution, isLoading: isLoadingDistribution } = useQuery({
-    queryKey: ['dataDistribution'],
-    queryFn: () => staticDataService.getDataDistribution(),
+    queryKey: ['dataDistribution', selectedMonth],
+    queryFn: () => staticDataService.getDataDistribution(selectedMonth || undefined),
     staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: !!selectedMonth,
   });
 
   const kpiData = useMemo(
