@@ -887,6 +887,9 @@ export const staticDataService = {
       // Count unique accounts in THIS month (not cumulative)
       const uniqueInMonth = new Set(accounts.map(a => a.accountId).filter(id => id));
       
+      // DEBUG: Log what we're loading for each month
+      console.log(`[getMonthlyAccountMetrics] ${month}: ${accounts.length} accounts loaded, ${uniqueInMonth.size} unique`);
+      
       // Count new accounts (not seen in previous months)
       let newAccounts = 0;
       for (const accountId of uniqueInMonth) {
