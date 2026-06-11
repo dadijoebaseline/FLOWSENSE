@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { auth, googleProvider } from './firebase.js';
+import { auth, googleProvider, firestore } from './firebase.js';
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 
 const AuthContext = createContext();
 
@@ -9,8 +10,27 @@ const ADMIN_EMAIL = normalizeEmail(import.meta.env.VITE_ADMIN_EMAIL || '');
 
 const getRoleFromEmail = (email) => (normalizeEmail(email) === ADMIN_EMAIL ? 'admin' : 'viewer');
 
-// Check for admin role from custom claims or email
+// Fetch user's role from Firestore flowsense_users collection
+const getRoleFromFirestore = async (userEmail) => {
+  try {
+    const userRef = doc(firestore, 'flowsense_users', userEmail);
+    const userSnap = await getDoc(userRef);
+    if (userSnap.exists()) {
+      const userData = userSnap.data();
+      if (userData.role && ['admin', 'manager', 'viewer'].includes(userData.role)) {
+        return userData.role;
+      }
+    }
+  } catch (err) {
+    console.debug('Could not fetch role from Firestore:', err.message);
+  }
+  return null;
+};
+
+// Check for role from custom claims, Firestore, or email
 const getRoleFromCustomClaimsOrEmail = async (firebaseUser, session) => {
+  const userEmail = session?.user?.email || firebaseUser?.email || '';
+  
   try {
     if (firebaseUser) {
       const idTokenResult = await firebaseUser.getIdTokenResult(true);
@@ -18,13 +38,22 @@ const getRoleFromCustomClaimsOrEmail = async (firebaseUser, session) => {
       if (customClaims.admin === true) {
         return 'admin';
       }
+      if (customClaims.manager === true) {
+        return 'manager';
+      }
     }
   } catch (err) {
     console.debug('Could not check custom claims:', err.message);
   }
   
+  // Try to fetch role from Firestore
+  const firestoreRole = await getRoleFromFirestore(userEmail);
+  if (firestoreRole) {
+    return firestoreRole;
+  }
+  
   // Fallback to email-based role check
-  return getRoleFromEmail(session?.user?.email || '');
+  return getRoleFromEmail(userEmail);
 };
 
 const fetchUserSession = async (idToken, firebaseUser = null) => {
