@@ -476,19 +476,25 @@ export const staticDataService = {
   },
 
   /**
-   * Get KPI metrics for all data
+   * Get KPI metrics for all data or a specific month
+   * @param {string} [month] - Optional month filter (e.g., '2026-05'). If omitted, returns all-months total
    * @returns {Promise<Object>}
    */
-  async getKPIMetrics() {
+  async getKPIMetrics(month = null) {
     const allAccounts = await loadAllAccounts();
+    
+    // Filter by month if provided
+    const accountsToAnalyze = month 
+      ? allAccounts.filter(a => a.datasetId === month)
+      : allAccounts;
 
     let totalConsumption = 0;
     let totalRevenue = 0;
-    let totalAccounts = allAccounts.length;
+    let totalAccounts = accountsToAnalyze.length;
     let activeCount = 0;
     let disconnectedCount = 0;
 
-    for (const account of allAccounts) {
+    for (const account of accountsToAnalyze) {
       totalConsumption += Number(account.cumUsed) || 0;
       totalRevenue += Number(account.billAmount) || 0;
       if (account.status === 'ACTIVE') activeCount += 1;
@@ -503,6 +509,7 @@ export const staticDataService = {
       disconnectedCount,
       avgConsumptionPerAccount: totalAccounts > 0 ? Math.round((totalConsumption / totalAccounts) * 100) / 100 : 0,
       avgRevenuePerAccount: totalAccounts > 0 ? Math.round((totalRevenue / totalAccounts) * 100) / 100 : 0,
+      month: month || 'all',
     };
   },
 

@@ -156,16 +156,22 @@ export default function Analytics() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Apply filters to accounts
+  // Apply filters AND month selection to accounts
   const filteredAccounts = useMemo(() => {
-    return applyFilters(allAccounts);
-  }, [allAccounts, applyFilters]);
+    let filtered = applyFilters(allAccounts);
+    // Filter by selected month
+    if (selectedMonth) {
+      filtered = filtered.filter(a => a.datasetId === selectedMonth);
+    }
+    return filtered;
+  }, [allAccounts, applyFilters, selectedMonth]);
 
-  // Fetch KPI metrics
+  // Fetch KPI metrics for selected month
   const { data: kpiMetrics, isLoading: isLoadingKPI, error: errorKPI } = useQuery({
-    queryKey: ['kpiMetrics'],
-    queryFn: () => staticDataService.getKPIMetrics(),
+    queryKey: ['kpiMetrics', selectedMonth],
+    queryFn: () => staticDataService.getKPIMetrics(selectedMonth || undefined),
     staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: !!selectedMonth,
   });
 
   // Fetch monthly account metrics (per-month, not summed)
