@@ -182,12 +182,13 @@ export default function Analytics() {
   });
 
   // Fetch comparative analysis (anomaly impact metrics)
-  // NOTE: This query is INDEPENDENT of filter selection and selectedMonth
-  // It always shows anomaly impact across ALL GeoJSON files (all months)
+  // NOTE: This query IS affected by selectedMonth filter
+  // It shows anomaly impact for the currently selected month only
   const { data: comparativeAnalysis, isLoading: isLoadingComparative } = useQuery({
-    queryKey: ['comparativeAnalysis'],
-    queryFn: () => staticDataService.getAnomalyComparativeAnalysis(),
+    queryKey: ['comparativeAnalysis', selectedMonth],
+    queryFn: () => staticDataService.getAnomalyComparativeAnalysis(selectedMonth),
     staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: !!selectedMonth,
   });
 
   // Fetch data distribution metrics
@@ -390,7 +391,7 @@ export default function Analytics() {
                 <div>
                   <h2 className="text-3xl font-bold text-gray-900 mb-2">⚠️ Anomaly Impact Analysis</h2>
                   <p className="text-gray-700 text-sm">Understanding the scope and severity of anomalies in your system</p>
-                  <p className="text-xs text-orange-700 font-semibold mt-2 inline-block bg-orange-100 px-3 py-1 rounded">📅 Data: All Available Months (Feb - May 2026) | Not affected by filter selection</p>
+                  <p className="text-xs text-orange-700 font-semibold mt-2 inline-block bg-orange-100 px-3 py-1 rounded">📅 Data: {selectedMonth ? `Selected Month Filter` : 'No month selected'} | Updated per month selection</p>
                 </div>
               </div>
 

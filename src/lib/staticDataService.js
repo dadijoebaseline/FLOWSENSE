@@ -849,20 +849,27 @@ export const staticDataService = {
   },
 
   /**
-   * Comparative Analysis: Dataset vs Anomalies - ACROSS ALL MONTHS
-   * Calculates anomaly impact metrics using data from ALL GeoJSON files
-   * NOT affected by filter selection - always aggregates complete dataset
+   * Comparative Analysis: Dataset vs Anomalies - FILTERED BY MONTH
+   * Calculates anomaly impact metrics for the selected month
+   * Affected by filter selection (month selection)
    * Returns metrics comparing normal accounts to anomalous accounts
    * Per Master Prompt requirement: "% of accounts affected, consumption %, revenue %"
-   * @returns {Promise<Object>} Comparative metrics aggregated from all months
+   * @param {string} month - The selected month (datasetId) to filter by
+   * @returns {Promise<Object>} Comparative metrics for the selected month
    */
-  async getAnomalyComparativeAnalysis() {
-    // Load ALL accounts from ALL GeoJSON files (all available months)
-    // This ensures the anomaly impact reflects the complete dataset
-    const allAccounts = await loadAllAccounts();
+  async getAnomalyComparativeAnalysis(month) {
+    // Load accounts for the selected month only
+    let monthAccounts = [];
+    if (month) {
+      const dataset = AVAILABLE_DATASETS.find(d => d.id === month);
+      if (dataset) {
+        monthAccounts = await loadDatasetAccounts(dataset);
+      }
+    }
+
     const anomalies = await this.getAnomalies();
 
-    // Build set of anomalous account IDs (accounts with anomalies across any month)
+    // Build set of anomalous account IDs (accounts with anomalies in the selected month)
     const anomalousIds = new Set(anomalies.map(a => a.accountNumber || a.accountId));
 
     let totalConsumption = 0;
@@ -872,8 +879,8 @@ export const staticDataService = {
     let totalAccounts = 0;
     let anomalousAccounts = 0;
 
-    // Aggregate metrics across ALL accounts from ALL months
-    for (const account of allAccounts) {
+    // Aggregate metrics for the selected month only
+    for (const account of monthAccounts) {
       if (!account.accountId) continue;
 
       const consumption = Number(account.cumUsed) || 0;
@@ -895,32 +902,32 @@ export const staticDataService = {
     const normalAccounts = totalAccounts - anomalousAccounts;
 
     return {
-      // Account Impact (across all months)
+      // Account Impact (for selected month)
       totalAccounts,
       anomalousAccounts,
       normalAccounts,
       anomalyAccountPercentage: totalAccounts > 0 ? Math.round((anomalousAccounts / totalAccounts) * 10000) / 100 : 0,
       normalAccountPercentage: totalAccounts > 0 ? Math.round((normalAccounts / totalAccounts) * 10000) / 100 : 0,
 
-      // Consumption Impact (across all months)
+      // Consumption Impact (for selected month)
       totalConsumption: Math.round(totalConsumption * 100) / 100,
       anomalousConsumption: Math.round(anomalousConsumption * 100) / 100,
       normalConsumption: Math.round(normalConsumption * 100) / 100,
       anomalyConsumptionPercentage: totalConsumption > 0 ? Math.round((anomalousConsumption / totalConsumption) * 10000) / 100 : 0,
       normalConsumptionPercentage: totalConsumption > 0 ? Math.round((normalConsumption / totalConsumption) * 10000) / 100 : 0,
 
-      // Revenue Impact (across all months)
+      // Revenue Impact (for selected month)
       totalRevenue: Math.round(totalRevenue * 100) / 100,
       anomalousRevenue: Math.round(anomalousRevenue * 100) / 100,
       normalRevenue: Math.round(normalRevenue * 100) / 100,
       anomalyRevenuePercentage: totalRevenue > 0 ? Math.round((anomalousRevenue / totalRevenue) * 10000) / 100 : 0,
       normalRevenuePercentage: totalRevenue > 0 ? Math.round((normalRevenue / totalRevenue) * 10000) / 100 : 0,
 
-      // Status Breakdown (Anomaly prevalence by status - across all months)
-      anomalyRateByStatus: await this._getAnomalyRateByStatus(allAccounts, anomalousIds),
+      // Status Breakdown (Anomaly prevalence by status - for selected month)
+      anomalyRateByStatus: await this._getAnomalyRateByStatus(monthAccounts, anomalousIds),
 
-      // Classification Breakdown (Anomaly prevalence by classification - across all months)
-      anomalyRateByClassification: await this._getAnomalyRateByClassification(allAccounts, anomalousIds),
+      // Classification Breakdown (Anomaly prevalence by classification - for selected month)
+      anomalyRateByClassification: await this._getAnomalyRateByClassification(monthAccounts, anomalousIds),
     };
   },
 
