@@ -1,13 +1,76 @@
 import { detectAnomaliesWithHistory, parseGeoJSON } from './anomalyDetection';
 
-const AVAILABLE_DATASETS = [
-  { id: '2026-02', name: 'February 2026', month_label: '2026-02', file: '2026-02.geojson' },
-  { id: '2026-03', name: 'March 2026', month_label: '2026-03', file: '2026-03.geojson' },
-  { id: '2026-04', name: 'April 2026', month_label: '2026-04', file: '2026-04.geojson' },
-  { id: '2026-05', name: 'May 2026', month_label: '2026-05', file: '2026-05.geojson' },
-];
+// Will be populated by loadAvailableDatasets()
+let AVAILABLE_DATASETS = [];
 
 const datasetStatus = 'completed';
+
+/**
+ * Auto-discover available GeoJSON files from public/data folder
+ * Generates AVAILABLE_DATASETS dynamically based on what files exist
+ */
+async function loadAvailableDatasets() {
+  if (AVAILABLE_DATASETS.length > 0) {
+    return AVAILABLE_DATASETS; // Already loaded
+  }
+
+  // Try to load manifest file first (if it exists)
+  try {
+    const manifestResponse = await fetch('/data/available-datasets.json');
+    if (manifestResponse.ok) {
+      AVAILABLE_DATASETS = await manifestResponse.json();
+      console.log('[staticDataService] Loaded datasets from manifest:', AVAILABLE_DATASETS.map(d => d.id));
+      return AVAILABLE_DATASETS;
+    }
+  } catch (e) {
+    // Manifest not found, auto-discover instead
+  }
+
+  // Auto-discover: try loading GeoJSON files for common months (Jan-Dec, 2 years)
+  const potentialDatasets = [];
+  const years = [2025, 2026];
+  const months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                      'July', 'August', 'September', 'October', 'November', 'December'];
+
+  for (const year of years) {
+    for (let i = 0; i < months.length; i++) {
+      const monthId = `${year}-${months[i]}`;
+      const fileName = `${monthId}.geojson`;
+      
+      // Check if file exists by attempting to fetch with HEAD
+      try {
+        const headResponse = await fetch(`/data/${fileName}`, { method: 'HEAD' });
+        if (headResponse.ok) {
+          potentialDatasets.push({
+            id: monthId,
+            name: `${monthNames[i]} ${year}`,
+            month_label: monthId,
+            file: fileName,
+          });
+        }
+      } catch (e) {
+        // File doesn't exist, skip
+      }
+    }
+  }
+
+  if (potentialDatasets.length > 0) {
+    AVAILABLE_DATASETS = potentialDatasets;
+    console.log('[staticDataService] Auto-discovered datasets:', AVAILABLE_DATASETS.map(d => d.id));
+  } else {
+    // Fallback to hardcoded if auto-discovery fails
+    console.warn('[staticDataService] Auto-discovery failed, using fallback datasets');
+    AVAILABLE_DATASETS = [
+      { id: '2026-02', name: 'February 2026', month_label: '2026-02', file: '2026-02.geojson' },
+      { id: '2026-03', name: 'March 2026', month_label: '2026-03', file: '2026-03.geojson' },
+      { id: '2026-04', name: 'April 2026', month_label: '2026-04', file: '2026-04.geojson' },
+      { id: '2026-05', name: 'May 2026', month_label: '2026-05', file: '2026-05.geojson' },
+    ];
+  }
+
+  return AVAILABLE_DATASETS;
+}
 /** @type {{file: string, error: string}[]} */
 const loadErrors = [];
 
@@ -55,6 +118,9 @@ let _allAccountsPromise = null;
 
 async function loadAllAccounts() {
   if (!_allAccountsPromise) {
+    // Ensure datasets are discovered first
+    await loadAvailableDatasets();
+    
     _allAccountsPromise = Promise.all(AVAILABLE_DATASETS.map(loadDatasetAccounts))
       .then(lists => lists.flat())
       .catch(err => {
@@ -77,7 +143,8 @@ function sortMonths(months) {
   return [...months].sort((a, b) => a.localeCompare(b));
 }
 
-export function filterLatestMonthAnomalies(anomalies, allAccounts) {
+export async function filterLatestMonthAnomalies(anomalies, allAccounts) {
+  await loadAvailableDatasets();
   const months = sortMonths(AVAILABLE_DATASETS.map(d => d.id));
   const monthIndex = {};
   months.forEach((month, i) => { monthIndex[month] = i; });
@@ -114,7 +181,7 @@ export const staticDataService = {
      */
     async getAccountHistory(accountId, months = 3) {
       const allAccounts = await loadAllAccounts();
-      const sortedDatasets = sortMonths(AVAILABLE_DATASETS.map(d => d.id));
+      const sortedDatasets = sortMonths(await this.getAvailableMonths());
 
       /** @type {Record<string, any>} */
       const accountMap = {};
@@ -154,6 +221,7 @@ export const staticDataService = {
       return trend;
     },
   async getDatasets() {
+    await loadAvailableDatasets();
     const allAccounts = await loadAllAccounts();
     const anomalies = await this.getAnomalies();
 
@@ -170,7 +238,7 @@ export const staticDataService = {
   },
 
   async getAnomalies() {
-    const months = sortMonths(this.getAvailableMonths());
+    const months = sortMonths(await this.getAvailableMonths());
 
     const allAccounts = await loadAllAccounts();
     const historicalAccounts = [];
@@ -206,6 +274,7 @@ export const staticDataService = {
    * @param {string} month
    */
   async getGeoJSONData(month) {
+    await loadAvailableDatasets();
     const dataset = AVAILABLE_DATASETS.find(item => item.id === month);
     if (!dataset) {
       console.warn(`GeoJSON request for unknown month: ${month}`);
@@ -214,7 +283,8 @@ export const staticDataService = {
     return fetchGeoJSONFile(dataset.file);
   },
 
-  getAvailableMonths() {
+  async getAvailableMonths() {
+    await loadAvailableDatasets();
     return AVAILABLE_DATASETS.map(dataset => dataset.id);
   },
 
@@ -747,7 +817,7 @@ export const staticDataService = {
    */
   async _generateTrendInsights(accounts, selectedMonth, allAccounts) {
     const insights = [];
-    const months = this.getAvailableMonths().sort();
+    const months = (await this.getAvailableMonths()).sort();
     
     if (months.length < 2) return insights;
 
@@ -873,7 +943,8 @@ export const staticDataService = {
    * @returns {Promise<Array>} Array of monthly metrics
    */
   async getMonthlyAccountMetrics() {
-    const months = this.getAvailableMonths().sort();
+    const months = (await this.getAvailableMonths()).sort();
+    await loadAvailableDatasets();
     const monthlyMetrics = [];
     const accountIds = {};
 
@@ -886,9 +957,6 @@ export const staticDataService = {
 
       // Count unique accounts in THIS month (not cumulative)
       const uniqueInMonth = new Set(accounts.map(a => a.accountId).filter(id => id));
-      
-      // DEBUG: Log what we're loading for each month
-      console.log(`[getMonthlyAccountMetrics] ${month}: ${accounts.length} accounts loaded, ${uniqueInMonth.size} unique`);
       
       // Count new accounts (not seen in previous months)
       let newAccounts = 0;
@@ -961,6 +1029,7 @@ export const staticDataService = {
    */
   async getAnomalyComparativeAnalysis(month) {
     // Load accounts for the selected month only
+    await loadAvailableDatasets();
     let monthAccounts = [];
     if (month) {
       const dataset = AVAILABLE_DATASETS.find(d => d.id === month);
