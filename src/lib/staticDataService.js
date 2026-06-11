@@ -60,12 +60,13 @@ async function loadAvailableDatasets() {
     console.log('[staticDataService] Auto-discovered datasets:', AVAILABLE_DATASETS.map(d => d.id));
   } else {
     // Fallback to hardcoded if auto-discovery fails
+    // Note: System maintains a rolling 4-month window; oldest month is deleted when new month is added
     console.warn('[staticDataService] Auto-discovery failed, using fallback datasets');
     AVAILABLE_DATASETS = [
-      { id: '2026-02', name: 'February 2026', month_label: '2026-02', file: '2026-02.geojson' },
       { id: '2026-03', name: 'March 2026', month_label: '2026-03', file: '2026-03.geojson' },
       { id: '2026-04', name: 'April 2026', month_label: '2026-04', file: '2026-04.geojson' },
       { id: '2026-05', name: 'May 2026', month_label: '2026-05', file: '2026-05.geojson' },
+      { id: '2026-06', name: 'June 2026', month_label: '2026-06', file: '2026-06.geojson' },
     ];
   }
 
