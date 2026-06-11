@@ -38,8 +38,8 @@ Phase 05 is the final phase of the Analytics Experience (Phase 2.5). It transfor
 **Deliverables**:
 - `SmartInsights.jsx` component with 4 observation types:
   1. **Rank-based**: "Area East ranks #1 in consumption with 45,000 cu.m. (↑12% vs avg)"
-  2. **Trend**: "Route B12 revenue increased 15% month-over-month (↑₹45K → ₹52K)"
-  3. **Anomaly**: "Area West revenue is 20% below average (₹120K vs ₹150K avg)"
+  2. **Trend**: "Route B12 revenue increased 15% month-over-month (↑₱45K → ₱52K)"
+  3. **Anomaly**: "Area West revenue is 20% below average (₱120K vs ₱150K avg)"
   4. **Comparative**: "Commercial uses 40% more water than Residential on average"
 
 **Implementation**:

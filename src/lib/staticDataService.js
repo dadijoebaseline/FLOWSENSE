@@ -803,7 +803,7 @@ export const staticDataService = {
         type: 'rank',
         icon: '💰',
         title: `Route ${top.name} revenue leader`,
-        description: `Route ${top.name} generates ₹${Math.round(top.total).toLocaleString()} (${varianceStr > 0 ? '↑' : ''}${varianceStr}% vs avg)`,
+        description: `Route ${top.name} generates ₱${Math.round(top.total).toLocaleString()} (${varianceStr > 0 ? '↑' : ''}${varianceStr}% vs avg)`,
         confidence: 0.9,
         color: 'bg-green-50',
       });
