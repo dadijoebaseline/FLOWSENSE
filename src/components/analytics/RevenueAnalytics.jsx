@@ -90,6 +90,7 @@ export default function RevenueAnalytics({ selectedMonth, filteredAccounts = [] 
     let total = 0;
     let min = Infinity;
     let max = 0;
+    let count = 0;
     let topRoute = '';
     let topValue = 0;
 
@@ -116,7 +117,7 @@ export default function RevenueAnalytics({ selectedMonth, filteredAccounts = [] 
 
     return {
       total: Math.round(total * 100) / 100,
-      avg: filteredAccounts.length > 0 ? Math.round((total / filteredAccounts.length) * 100) / 100 : 0,
+      avg: count > 0 ? Math.round((total / count) * 100) / 100 : 0,
       min: min === Infinity ? 0 : Math.round(min * 100) / 100,
       max: Math.round(max * 100) / 100,
       topRoute,

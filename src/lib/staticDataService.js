@@ -779,13 +779,14 @@ export const staticDataService = {
     const accountIds = {};
 
     for (const month of months) {
-      const data = await this.getGeoJSONData(month);
-      const accounts = data.features
-        ? data.features.map(f => ({ ...f.properties, datasetId: month }))
-        : [];
+      const dataset = AVAILABLE_DATASETS.find(item => item.id === month);
+      if (!dataset) continue;
+      
+      // Use loadDatasetAccounts to get properly parsed accounts with normalized field names
+      const accounts = await loadDatasetAccounts(dataset);
 
       // Count unique accounts in THIS month (not cumulative)
-      const uniqueInMonth = new Set(accounts.map(a => a.accountId));
+      const uniqueInMonth = new Set(accounts.map(a => a.accountId).filter(id => id));
       
       // Count new accounts (not seen in previous months)
       let newAccounts = 0;

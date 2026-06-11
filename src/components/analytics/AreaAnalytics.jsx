@@ -61,7 +61,7 @@ export default function AreaAnalytics({ selectedMonth, filteredAccounts = [] }) 
       .slice(0, 10);
   }, [filteredAccounts, selectedMonth]);
 
-  // Calculate area metrics from filtered accounts
+  // Calculate area metrics from filtered accounts for selected month
   const areaMetrics = useMemo(() => {
     const areaMap = {};
     let totalConsumption = 0;
@@ -91,7 +91,7 @@ export default function AreaAnalytics({ selectedMonth, filteredAccounts = [] }) 
 
     return {
       totalAreas: areaCount,
-      avgConsumption: areaCount > 0 ? Math.round((totalConsumption / areaCount) * 100) / 100 : 0,
+      avgConsumption: totalAccounts > 0 ? Math.round((totalConsumption / totalAccounts) * 100) / 100 : 0,
       topArea,
       totalAccounts,
     };

@@ -156,7 +156,7 @@ export function parseGeoJSON(geojsonData, datasetLabel = '') {
       prvReading: prvReadingValue,
       prsReading: prsReadingValue,
       cumUsed, rawCumUsed, // Canonical field for monthly usage (rawCumUsed preserves original provided reading, or null)
-      billAmount: Number(props.billAmount ?? props.BillAmount) || 0,
+      billAmount: Number(props.billAmount ?? props.BillAmount ?? props.billamount ?? props.bill_amount) || 0,
       year: props.year ?? props.Year ?? null,
       month: props.month ?? props.Month ?? '',
       remarks: props.remarks ?? props.Remarks ?? '',

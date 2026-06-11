@@ -87,7 +87,7 @@ export default function RouteAnalytics({ selectedMonth, filteredAccounts = [] })
       .slice(0, 10);
   }, [filteredAccounts, selectedMonth]);
 
-  // Calculate route metrics from filtered accounts
+  // Calculate route metrics from filtered accounts for selected month
   const routeMetrics = useMemo(() => {
     const routeMap = {};
     let totalRevenue = 0;
@@ -117,7 +117,7 @@ export default function RouteAnalytics({ selectedMonth, filteredAccounts = [] })
 
     return {
       totalRoutes: routeCount,
-      avgRevenue: routeCount > 0 ? Math.round((totalRevenue / routeCount) * 100) / 100 : 0,
+      avgRevenue: totalAccounts > 0 ? Math.round((totalRevenue / totalAccounts) * 100) / 100 : 0,
       topRoute,
       totalRevenue: Math.round(totalRevenue * 100) / 100,
     };
