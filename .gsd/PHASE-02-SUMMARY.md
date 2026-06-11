@@ -1,10 +1,10 @@
 # Phase 2: Static Data Experience - Implementation Summary
 
 **Completion Date**: 2026-06-11  
-**Duration**: 1 session  
+**Duration**: 1 session + localization updates  
 **Status**: ✅ COMPLETE  
 **Deployments**: 4 (all successful)  
-**Git Commits**: 4 atomic commits
+**Git Commits**: 5 atomic commits
 
 ---
 
@@ -259,14 +259,16 @@ All work committed with atomic, per-task commits:
 | `14f25f5` | chore: add 2026-06 geojson dataset | Added new June data file |
 | `93a054a` | chore: update fallback datasets to reflect 4-month rolling window | Updated hardcoded fallback from [Feb-May] to [Mar-Jun] |
 | `a4b6d9b` | fix: handle async getAvailableMonths in Analytics page | Fixed month selector Promise handling |
+| `c22d317` | chore: change currency symbol from Indian Rupee to Philippine Peso | Updated Smart Insights to use ₱ instead of ₹ |
 
 ## Vercel Deployments
 
 | Deployment | Status | Time | URL |
 |------------|--------|------|-----|
-| 1 | ✅ Success | 45s | https://tcwdflowsense.vercel.app |
+| 1 | ✅ Success | 45s | https://tcwdflowsense.vercel.app (auto-discovery) |
 | 2 | ✅ Success | 41s | (fallback update) |
 | 3 | ✅ Success | 41s | (Analytics fix) |
+| 4 | ✅ Success | 32s | (currency localization) |
 
 ---
 
@@ -324,5 +326,14 @@ All work committed with atomic, per-task commits:
 ---
 
 ## Phase Complete ✅
+
+### Post-Completion Update (2026-06-11 afternoon)
+
+**Currency Localization**:
+- Updated Smart Insights revenue displays from Indian Rupee (₹) to Philippine Peso (₱)
+- Files affected: `src/lib/staticDataService.js`, `.gsd/PHASE-05-PLAN.md`
+- Git commit: `c22d317`
+- Vercel deployment: 32 seconds
+- **Status**: ✅ Live on production (https://tcwdflowsense.vercel.app)
 
 All Phase 2 success criteria met. System ready for Phase 4 features (URL state, exports, predictive analytics).

@@ -10,9 +10,9 @@ See: .gsd/PROJECT.md (updated 2026-05-14)
 ## Current Position
 
 Phase: 2 of 3+ (✅ All core phases complete - now in production operations)
-Plan: 3 of 3 in Phase 2 (just completed)
-Status: ✅ COMPLETE - Phase 2 (Static Data Experience) shipped 2026-06-11
-Last activity: 2026-06-11 — Implemented auto-discovery system for geojson datasets, fixed Analytics async compatibility, deployed to Vercel
+Plan: 3 of 3 in Phase 2 (complete) + Currency localization
+Status: ✅ COMPLETE - Phase 2 shipped 2026-06-11 | Currency updated to Philippine Peso (₱)
+Last activity: 2026-06-11 — Updated currency symbol from Indian Rupee (₹) to Philippine Peso (₱) in Smart Insights; 4 deployments total
 
 Progress: [██████████] 100% (core phases)
 
@@ -62,10 +62,17 @@ Progress: [██████████] 100% (core phases)
 - Fixed useEffect to use `.then()` pattern for Promise handling
 - Month dropdown now populates dynamically from auto-discovered datasets
 
+**Currency Localization** (2026-06-11):
+- Changed Smart Insights revenue display from ₹ (Indian Rupee) to ₱ (Philippine Peso)
+- Updated `src/lib/staticDataService.js` - Smart Insights rank observation (line 806)
+- Updated `.gsd/PHASE-05-PLAN.md` - Documentation examples (lines 41-42)
+- Git commit: `c22d317`
+- Deployed to Vercel (32 seconds)
+
 **Deployment**:
-- All 4 geojson files deployed to Vercel (2026-03 through 2026-06)
-- Auto-discover system verified working in production
-- 4 commits to git documenting the work
+- 4 commits to git documenting Phase 2 work + currency change
+- 4 Vercel deployments, all successful (45s, 41s, 41s, 32s)
+- All geojson files deployed (2026-03 through 2026-06)
 
 ### Pending Todos
 
@@ -74,10 +81,14 @@ Progress: [██████████] 100% (core phases)
 - Monitor dataset growth and rolling window maintenance
 
 ### Blockers/Concerns
-
-- RESOLVED: Dataset discovery was hardcoded, now automatic ✅
-- RESOLVED: Analytics page wasn't compatible with async functions ✅
-- NOTE: 404 errors during HEAD probing are expected and handled correctly
+(ongoing)  
+Completed: 
+  - Phase 2 implementation (auto-discovery system)
+  - Analytics async compatibility fix
+  - Currency localization (₹ → ₱)
+  - 5 git commits, 4 Vercel deployments
+Status: Production ready | All Phase 2 goals achieved | Ready for Phase 4 features
+Resume file: See `.gsd/PHASE-02-SUMMARY.md` for Phase 2 details | See git commit c22d317 for currency changetly
 
 ## Session Continuity
 
