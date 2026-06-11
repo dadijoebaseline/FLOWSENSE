@@ -135,23 +135,11 @@ export default function Analytics() {
     }
   }, [selectedMonth]);
 
-  // Fetch all accounts for filtering
+  // Fetch all accounts with proper parsing and normalization
   const { data: allAccounts = [] } = useQuery({
     queryKey: ['allAccounts'],
     queryFn: async () => {
-      const accounts = [];
-      for (const month of staticDataService.getAvailableMonths()) {
-        const data = await staticDataService.getGeoJSONData(month);
-        if (data.features) {
-          accounts.push(
-            ...data.features.map((f) => ({
-              ...f.properties,
-              datasetId: month,
-            }))
-          );
-        }
-      }
-      return accounts;
+      return staticDataService.getAllAccounts();
     },
     staleTime: 5 * 60 * 1000,
   });
