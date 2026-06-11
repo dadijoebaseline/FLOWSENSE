@@ -1,0 +1,484 @@
+PROJECT: FlowSense Analytics Page Master Prompt
+VERSION: v1.0
+DATE: 2026-06-11
+SCOPE: Analytics Page Only - Complete Dataset Holistic Analysis
+
+================================================================================
+⚠️  CRITICAL SAFEGUARD
+================================================================================
+
+This prompt is EXCLUSIVE to the Analytics page.
+
+DO NOT apply to:
+  ❌ Anomaly detection logic
+  ❌ Anomaly dashboard or KPI cards
+  ❌ Authentication system
+  ❌ Map rendering
+  ❌ User management
+  ❌ Any other feature
+
+ONLY modify:
+  ✅ /src/pages/Analytics.jsx and related analytics components
+  ✅ /src/lib/staticDataService.js (analytics methods only)
+  ✅ /src/components/analytics/* (analytics modules)
+  ✅ Documentation files (.gsd/, prompt/)
+
+================================================================================
+PURPOSE: HOLISTIC ANALYTICS WITH FULL DATASET CONTEXT
+================================================================================
+
+Goal: Transform the /analytics route into an enterprise-grade dashboard that:
+
+✅ Includes ALL accounts (with and without anomalies)
+✅ Covers ALL statuses (ACTIVE, DISCONNECTED, NEW, Renewed)
+✅ Analyzes ALL classifications (Residential, Commercial, Industrial, etc.)
+✅ Provides temporal insights (month-over-month, year-over-year)
+✅ Shows comparative analysis (dataset total vs anomaly subset)
+✅ Delivers actionable insights beyond exception reporting
+
+ANALYTICS ≠ ANOMALIES:
+
+Analytics Page:
+  - Scope: ALL accounts
+  - Focus: Trends, patterns, distribution, baseline health
+  - Questions: "What is normal? What's the trend?"
+  - Audience: Operations, Managers
+  - Insight: Healthy baseline, operational efficiency
+
+Anomaly Dashboard (UNCHANGED):
+  - Scope: Anomalous accounts only
+  - Focus: Exceptions, outliers, alerts
+  - Questions: "What's broken? What changed?"
+  - Audience: Maintenance, Technicians
+  - Insight: Problems, thresholds, maintenance needs
+
+================================================================================
+DATA COVERAGE REQUIREMENTS
+================================================================================
+
+1. INCLUDE ALL ACCOUNTS
+
+Source: All 4 GeoJSON files (Feb-May 2026)
+  - 2026-02.geojson → All Feb accounts
+  - 2026-03.geojson → All Mar accounts
+  - 2026-04.geojson → All Apr accounts
+  - 2026-05.geojson → All May accounts
+
+Rule: No filtering, no bias. Every account counted.
+Verification: Total accounts in analytics = unique account sum across all months
+
+2. INCLUDE ALL STATUSES
+
+Every status value represented:
+  - ACTIVE          → Actively consuming water
+  - DISCONNECTED    → Not consuming ($≈0)
+  - Renewed         → Reconnected mid-month
+  - NEW             → New connection
+  - [Any other status in data]
+
+Breakdown required in every metric:
+  Total = ACTIVE + DISCONNECTED + Others
+  All distributions shown separately
+
+3. INCLUDE ALL CLASSIFICATIONS
+
+All 25 rateCode mappings:
+  
+  Residential (3): 01, 02, 02A
+  Commercial (10): 03, 04, 06, 07, 08, 10, 11, 12, 18, 19
+  Industrial (1): 05
+  Government (3): 09, 09A, 09B
+  Institutional (5): 14, 15, 15A, 16, 17
+  Subdivision (1): 13
+  Bulk Sales (2): 20, 21
+
+Show individual classifications in detail views.
+Group by category (Residential/Commercial) in summaries.
+Flag unknown/unmapped rateCodes as "Unclassified".
+
+================================================================================
+CORE METRICS & CALCULATIONS
+================================================================================
+
+TOTAL METRICS (Dataset-Wide):
+
+  Consumption Totals:
+    Total Consumption (all)         = SUM(cumUsed) across all accounts, months
+    Total Consumption (ACTIVE)      = SUM(cumUsed) where status="ACTIVE"
+    Total Consumption (DISCONNECTED)= SUM(cumUsed) where status="DISCONNECTED"
+
+  Revenue Totals:
+    Total Revenue (all)         = SUM(billAmount) across all accounts
+    Total Revenue (ACTIVE)      = SUM(billAmount) where status="ACTIVE"
+    Total Revenue (DISCONNECTED)= SUM(billAmount) where status="DISCONNECTED"
+
+  Account Counts:
+    Total Active Accounts       = COUNT(distinct) where status="ACTIVE"
+    Total Disconnected Accounts = COUNT(distinct) where status="DISCONNECTED"
+    Total Accounts              = Active + Disconnected + Others
+
+
+AVERAGE METRICS:
+
+  Per-Account Averages:
+    Avg Consumption/Account     = Total Consumption / Total Accounts
+    Avg Revenue/Account         = Total Revenue / Total Accounts
+    Avg Consumption (ACTIVE)    = Total Consumption(ACTIVE) / Active Accounts
+
+  Temporal Averages:
+    Avg Monthly Consumption     = Total Consumption / 4 months
+    Avg Monthly Revenue         = Total Revenue / 4 months
+
+
+DISTRIBUTION METRICS:
+
+  Status Distribution:
+    % ACTIVE        = (ACTIVE accounts / Total accounts) × 100
+    % DISCONNECTED  = (DISCONNECTED accounts / Total accounts) × 100
+
+  Consumption Distribution:
+    Min Consumption = MIN(cumUsed)
+    Max Consumption = MAX(cumUsed)
+    Median Consumption = MEDIAN(cumUsed)
+    Q1 (25th percentile)
+    Q3 (75th percentile)
+
+  Revenue Distribution:
+    Min Revenue, Max Revenue, Median Revenue
+    Q1, Q3 percentiles
+
+
+DIMENSIONAL BREAKDOWN:
+
+  By Area (area field):
+    - Account count (total, ACTIVE, DISCONNECTED)
+    - Total consumption and % of total dataset
+    - Total revenue and % of total dataset
+    - Average consumption per account in area
+    - Status distribution (% ACTIVE in area)
+    - Classification distribution (% Residential, Commercial in area)
+
+  By Route (bookNo field):
+    - Account count
+    - Total consumption
+    - Total revenue
+    - Average consumption per account
+    - Route efficiency = Revenue / Consumption
+    - Peak consumption month
+    - Status breakdown
+
+  By Classification (rateCode field):
+    - Account count
+    - Total consumption (individual + category)
+    - Total revenue
+    - Average consumption per account
+    - Consumption trend (month-over-month)
+    - Revenue per unit comparison to other classifications
+
+  By Status:
+    For ACTIVE:
+      - Count, % of total
+      - Total consumption, avg/account
+      - Total revenue, avg/account
+      - Status trend (becoming active vs staying)
+    
+    For DISCONNECTED:
+      - Count, % of total
+      - Why disconnected (if available)
+      - Reconnection potential
+    
+    For NEW (if applicable):
+      - Count
+      - Initial consumption patterns
+      - Classification distribution
+
+
+TEMPORAL METRICS:
+
+  Month-over-Month:
+    Feb→Mar: Growth Rate = ((Mar - Feb) / Feb) × 100 %
+    Mar→Apr: Growth Rate
+    Apr→May: Growth Rate
+    
+    Per dimension: Show which gained/lost, which > 10% change
+
+  Year-over-Year (if multiple years available):
+    Same month, different years
+    Growth rate comparison
+
+  Seasonal Patterns:
+    Average consumption by month
+    Identify peak/low months
+    Account for data limitations (Feb-May only)
+
+================================================================================
+COMPARATIVE ANALYSIS: ALL ACCOUNTS vs ANOMALIES
+================================================================================
+
+KEY INSIGHT: Contextualize anomalies as "% of dataset"
+
+Anomaly Impact Analysis:
+  Total Accounts              = A
+  Accounts with Anomalies     = B
+  Anomaly Impact %            = (B / A) × 100 %
+  
+  Display: "2,150 total accounts | 47 with anomalies (2.2%)"
+
+Consumption Comparison:
+  Total Dataset Consumption       = C
+  Anomalous Account Consumption   = D
+  Normal Account Consumption      = C - D
+  
+  % Normal = ((C - D) / C) × 100 %
+  % Anomalous = (D / C) × 100 %
+  
+  Display: "Normal accounts: 94% of consumption | Anomalous: 6%"
+
+Revenue Comparison:
+  Total Revenue               = R
+  Revenue from anomalous      = R_anom
+  Revenue Loss/Risk           = R_anom
+  
+  % Revenue Impact = (R_anom / R) × 100 %
+
+Status Patterns:
+  % Anomalies in ACTIVE = (anomalous active / total active) × 100
+  % Anomalies in DISCONNECTED = (anomalous disconnected / total disconnected) × 100
+  
+  Insight: If ACTIVE=3% anomalies, DISCONNECTED=0.5%
+  → Problem more prevalent in active accounts
+
+Classification Patterns:
+  Anomaly Rate by Classification:
+    - Residential: 1.5% of residential accounts
+    - Commercial: 3.8% of commercial accounts
+    - Industrial: 5.2% of industrial accounts
+  
+  Insight: Which classifications need attention?
+
+================================================================================
+MEANINGFUL INSIGHTS & CONTEXTUAL LOGIC
+================================================================================
+
+OPERATIONAL HEALTH INDICATORS:
+
+  Healthy Dataset Baseline:
+    Normal Range (IQR based):
+      Min: Q1 (25th percentile)
+      Target: Median
+      Max: Q3 (75th percentile)
+      Outliers: Beyond Q3 or below Q1
+    
+    Display: "Normal consumption: 15-45 m³/month (IQR) | Median: 28 m³/month"
+
+  Account Health Score (Per Account):
+    - Status: ACTIVE / DISCONNECTED / Other
+    - Consumption vs local average (area/classification)
+    - Revenue vs local average
+    - Trend: Increasing, Stable, Decreasing
+    - Anomaly risk: Yes/No
+
+EFFICIENCY METRICS:
+
+  Route Efficiency (Per Route):
+    - Revenue per account = Total Revenue / Account Count
+    - Consumption per account = Total Consumption / Account Count
+    - Revenue per unit water = Total Revenue / Total Consumption
+    - Account density
+    - Peak efficiency = (Revenue/unit) × (Account Count)
+    - Benchmark: Compare to district average
+
+  Area Performance (Per Area):
+    - Revenue generation ranking
+    - Consumption profile vs other areas
+    - Account concentration
+    - Growth trend (month-over-month)
+    - Status health (% ACTIVE)
+
+TREND ANALYSIS:
+
+  Consumption Trends:
+    Dataset-wide: Feb→Mar +X%, Mar→Apr +Y%, Apr→May +Z%
+    Per dimension: Which areas/routes/classifications growing/declining?
+
+  Revenue Trends:
+    Same as consumption, but for billAmount
+    Divergence check: Consumption up, Revenue down = billing issue?
+
+  Account Movement:
+    New connections: Feb → May count
+    Disconnections: Feb → May count
+    Reconnections: DISCONNECTED → ACTIVE changes
+
+RISK & OPPORTUNITY INDICATORS:
+
+  Revenue at Risk:
+    Disconnected accounts:
+      - Count
+      - Previous consumption (if available)
+      - Potential revenue if reconnected
+      - Months disconnected
+    
+    Example: "847 disconnected accounts worth ~$125K annual revenue"
+
+  Growth Opportunity:
+    - Areas with high account growth
+    - Classifications with rising consumption
+    - New connections trend
+    
+    Example: "Area X added 23 new accounts (highest) with 15% higher avg consumption"
+
+  Operational Concerns:
+    - Routes with high disconnection rates
+    - Areas with declining revenue
+    - Sudden consumption drops in formerly stable accounts
+
+================================================================================
+IMPLEMENTATION CHECKLIST
+================================================================================
+
+☐ DATA COVERAGE
+  ☐ All 4 GeoJSON files (Feb-May 2026) included
+  ☐ No account filtering at aggregation level
+  ☐ All status values represented
+  ☐ All 25 classifications included
+  ☐ Accounts with $0 consumption included
+  ☐ Disconnected accounts NOT hidden
+  ☐ No hardcoded anomaly filtering in analytics
+
+☐ COMPARATIVE ANALYSIS
+  ☐ Total account count displayed
+  ☐ Anomaly impact % calculated
+  ☐ Consumption comparison (normal vs anomalous %)
+  ☐ Revenue comparison visible
+  ☐ Status distribution shown
+  ☐ Classification distribution shown
+  ☐ Insights compare dataset health vs anomalies
+
+☐ CONTEXTUAL LOGIC
+  ☐ Total consumption metric (all + by status)
+  ☐ Average consumption per account
+  ☐ Consumption distribution (min, median, max, quartiles)
+  ☐ Status breakdown (% ACTIVE, % DISCONNECTED)
+  ☐ Account health score/indicator
+  ☐ Route efficiency metric
+  ☐ Area performance ranking
+  ☐ Trend analysis (month-over-month %)
+  ☐ Revenue at risk (disconnected accounts)
+  ☐ Growth opportunity indicators
+
+☐ MEANINGFUL INSIGHTS
+  ☐ Baseline statistics provided
+  ☐ Operational efficiency metrics
+  ☐ Anomaly impact contextualized
+  ☐ Trend visualization (month-over-month)
+  ☐ Account movement tracking
+  ☐ Risk indicators highlighted
+  ☐ Growth opportunities identified
+  ☐ Insights beyond "anomaly count" (why, impact)
+
+☐ INTEGRATION
+  ☐ Analytics uses staticDataService.js
+  ☐ No changes to anomaly detection
+  ☐ No changes to authentication/map
+  ☐ Analytics separates normal from anomaly context
+  ☐ Filters independent (don't affect dashboard/map)
+  ☐ Temporal selection independent
+  ☐ All changes isolated to Analytics
+
+================================================================================
+SCOPE BOUNDARIES
+================================================================================
+
+✅ IN SCOPE (Analytics Page Only):
+  ✅ Analytics.jsx page
+  ✅ Consumption/Revenue/Area/Route/Status analytics components
+  ✅ Filter panel for analytics
+  ✅ Smart insights module
+  ✅ staticDataService analytics methods (NEW only)
+  ✅ KPI cards for analytics dashboard
+  ✅ Temporal selection UI
+  ✅ Chart visualizations for analytics
+
+❌ OUT OF SCOPE (DO NOT MODIFY):
+  ❌ Anomaly detection algorithm
+  ❌ Anomaly dashboard KPIs
+  ❌ Dashboard.jsx page
+  ❌ Anomaly chart components
+  ❌ Map rendering (Leaflet, markers)
+  ❌ Authentication system
+  ❌ AdminUsers panel
+  ❌ API routes (auth, admin)
+  ❌ Database/Firestore operations
+  ❌ RateCode mapping (use existing, don't modify)
+
+================================================================================
+SUCCESS CRITERIA
+================================================================================
+
+✓ Data Coverage Success:
+  ✓ Analytics shows 100% of accounts from all GeoJSON
+  ✓ No accounts hidden or pre-filtered
+  ✓ Anomalous accounts included with separate comparison
+  ✓ All status values represented
+
+✓ Comparative Analysis Success:
+  ✓ Page shows "% of accounts with anomalies"
+  ✓ Consumption comparison visible (normal vs anomalous %)
+  ✓ Revenue impact of anomalies calculated
+  ✓ User can see if anomalies are 10% (widespread) or 1% (isolated)
+
+✓ Contextual Insights Success:
+  ✓ Baseline metrics provided (median, ranges)
+  ✓ Operational metrics beyond counts
+  ✓ Trends visible (month-over-month)
+  ✓ "What to investigate" is clear
+  ✓ Insights are actionable
+
+✓ Integration Success:
+  ✓ Analytics independent from anomaly system
+  ✓ No breaking changes to dashboard/map
+  ✓ No authentication issues
+  ✓ Anomaly logic untouched
+  ✓ Analytics filters isolated
+
+================================================================================
+REFERENCE DOCUMENTS
+================================================================================
+
+Primary Documentation:
+  - .gsd/ANALYTICS-MASTER-PROMPT.md      (Full version)
+  - .gsd/ANALYTICS-PLAN.md               (Implementation roadmap)
+  - prompt/Analytic route.txt            (Project overview)
+
+Supporting Documentation:
+  - src/lib/rateCodeMap.js               (25 classifications)
+  - src/lib/staticDataService.js         (GeoJSON aggregation)
+  - .gsd/AUTHENTICATION-INDEX.md         (Auth system for manager access)
+
+================================================================================
+FINAL PHILOSOPHY
+================================================================================
+
+This analytics page is NOT an anomaly detector.
+It is an UNDERSTANDING TOOL.
+
+Users should answer:
+  • "What is my baseline?" → Median, quartiles, normal ranges
+  • "How much is the dataset?" → Total accounts, consumption, revenue
+  • "What's trending?" → Month-over-month changes, growth
+  • "How bad is the anomaly problem?" → % of accounts, consumption, revenue
+  • "Where should I focus?" → Which areas, routes, classifications matter
+
+NON-NEGOTIABLE:
+  1. ✅ All accounts included (no pre-filtering toward anomalies)
+  2. ✅ Separate from anomaly logic (independent system)
+  3. ✅ Comparative context (show anomalies as % of dataset)
+  4. ✅ Actionable insights (trends, risks, opportunities)
+  5. ✅ Temporal awareness (all metrics grouped by month/year)
+
+================================================================================
+Master Prompt Version: v1.0
+Created: 2026-06-11
+Status: Ready for Phase 1 Implementation
+================================================================================
