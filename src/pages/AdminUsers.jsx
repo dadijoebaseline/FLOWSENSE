@@ -6,8 +6,6 @@ import { collection, query, getDocs, doc, updateDoc, deleteDoc } from 'firebase/
 
 const ROLE_OPTIONS = ['viewer', 'manager', 'admin'];
 
-const normalizeEmail = (email) => String(email || '').trim().toLowerCase();
-
 export default function AdminUsers() {
   const { user, logout, getIdToken } = useAuth();
   const [users, setUsers] = useState([]);
@@ -115,8 +113,7 @@ export default function AdminUsers() {
       }
 
       // Fallback: Update Firestore directly (static deployment)
-      const normalizedUserId = normalizeEmail(userId);
-      const userRef = doc(firestore, 'flowsense_users', normalizedUserId);
+      const userRef = doc(firestore, 'flowsense_users', userId);
       const updateData = {
         ...updates,
         updatedAt: new Date().toISOString(),
@@ -163,8 +160,7 @@ export default function AdminUsers() {
       }
 
       // Fallback: Delete from Firestore directly (static deployment)
-      const normalizedUserId = normalizeEmail(userId);
-      const userRef = doc(firestore, 'flowsense_users', normalizedUserId);
+      const userRef = doc(firestore, 'flowsense_users', userId);
       await deleteDoc(userRef);
       
       setMessage('User removed successfully.');
