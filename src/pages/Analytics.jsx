@@ -31,6 +31,7 @@ const AccountTrends = lazy(() => import('../components/analytics/AccountTrends')
 const TABS = [
   { id: 'accounts', label: 'Account Trends', icon: '👥' },
   { id: 'kpi', label: 'Dashboard', icon: '📊' },
+  { id: 'comparative', label: 'Anomaly Impact', icon: '⚠️' },
   { id: 'consumption', label: 'Consumption', icon: '💧' },
   { id: 'revenue', label: 'Revenue', icon: '💰' },
   { id: 'area', label: 'Area Performance', icon: '🗺️' },
@@ -171,6 +172,20 @@ export default function Analytics() {
   const { data: monthlyMetrics = [], isLoading: isLoadingMonthly } = useQuery({
     queryKey: ['monthlyAccountMetrics'],
     queryFn: () => staticDataService.getMonthlyAccountMetrics(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Fetch comparative analysis (anomaly impact metrics)
+  const { data: comparativeAnalysis, isLoading: isLoadingComparative } = useQuery({
+    queryKey: ['comparativeAnalysis'],
+    queryFn: () => staticDataService.getAnomalyComparativeAnalysis(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Fetch data distribution metrics
+  const { data: dataDistribution, isLoading: isLoadingDistribution } = useQuery({
+    queryKey: ['dataDistribution'],
+    queryFn: () => staticDataService.getDataDistribution(),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
@@ -352,6 +367,110 @@ export default function Analytics() {
               ))}
             </div>
           </div>
+        )}
+
+        {/* Comparative Analysis Tab - Anomaly Impact */}
+        {activeTab === 'comparative' && comparativeAnalysis && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="space-y-6"
+          >
+            {/* Anomaly Impact Overview */}
+            <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg border border-orange-200 p-6">
+              <h2 className="text-xl font-bold text-gray-800 mb-4">Anomaly Impact Analysis</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="bg-white rounded-lg p-4 border border-orange-200">
+                  <p className="text-sm text-gray-600 mb-1">Accounts Affected by Anomalies</p>
+                  <p className="text-3xl font-bold text-orange-600">
+                    {comparativeAnalysis.anomalyAccountPercentage}%
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {comparativeAnalysis.anomalousAccounts} of {comparativeAnalysis.totalAccounts} accounts
+                  </p>
+                </div>
+                <div className="bg-white rounded-lg p-4 border border-red-200">
+                  <p className="text-sm text-gray-600 mb-1">Consumption from Anomalies</p>
+                  <p className="text-3xl font-bold text-red-600">
+                    {comparativeAnalysis.anomalyConsumptionPercentage}%
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {comparativeAnalysis.anomalousConsumption?.toLocaleString()} of {comparativeAnalysis.totalConsumption?.toLocaleString()} cu.m
+                  </p>
+                </div>
+                <div className="bg-white rounded-lg p-4 border border-rose-200">
+                  <p className="text-sm text-gray-600 mb-1">Revenue from Anomalies</p>
+                  <p className="text-3xl font-bold text-rose-600">
+                    {comparativeAnalysis.anomalyRevenuePercentage}%
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    ₱{comparativeAnalysis.anomalousRevenue?.toLocaleString()} of ₱{comparativeAnalysis.totalRevenue?.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Status Distribution */}
+            {comparativeAnalysis.anomalyRateByStatus && (
+              <div className="bg-white rounded-lg border border-slate-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Anomaly Rate by Status</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {Object.entries(comparativeAnalysis.anomalyRateByStatus).map(([status, data]) => (
+                    <div key={status} className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                      <p className="font-semibold text-gray-800">{status}</p>
+                      <p className="text-2xl font-bold text-blue-600 mt-2">{data.anomalyRate}%</p>
+                      <p className="text-xs text-gray-600 mt-1">
+                        {data.anomalous} of {data.total} accounts
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Classification Distribution (top anomaly rates) */}
+            {comparativeAnalysis.anomalyRateByClassification && (
+              <div className="bg-white rounded-lg border border-slate-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Anomaly Rate by Classification (Top 10)</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                  {Object.entries(comparativeAnalysis.anomalyRateByClassification)
+                    .sort(([, a], [, b]) => b.anomalyRate - a.anomalyRate)
+                    .slice(0, 10)
+                    .map(([rateCode, data]) => (
+                      <div key={rateCode} className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                        <p className="font-semibold text-gray-700">{getClassificationName(rateCode)}</p>
+                        <p className="text-lg font-bold text-red-600">{data.anomalyRate}%</p>
+                        <p className="text-xs text-gray-600">
+                          {data.anomalous}/{data.total}
+                        </p>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {/* Normal vs Anomalous Summary */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-green-50 rounded-lg border border-green-200 p-6">
+                <h3 className="text-lg font-semibold text-green-800 mb-4">📈 Normal Accounts (Healthy Baseline)</h3>
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-700"><span className="font-semibold">{comparativeAnalysis.normalAccountPercentage}%</span> of accounts</p>
+                  <p className="text-sm text-gray-700"><span className="font-semibold">{comparativeAnalysis.normalConsumptionPercentage}%</span> of consumption</p>
+                  <p className="text-sm text-gray-700"><span className="font-semibold">{comparativeAnalysis.normalRevenuePercentage}%</span> of revenue</p>
+                  <p className="text-xs text-gray-600 mt-2">Avg: {comparativeAnalysis.totalConsumption > 0 ? (comparativeAnalysis.normalConsumption / comparativeAnalysis.normalAccounts).toFixed(1) : 0} cu.m/account</p>
+                </div>
+              </div>
+              <div className="bg-red-50 rounded-lg border border-red-200 p-6">
+                <h3 className="text-lg font-semibold text-red-800 mb-4">⚠️ Anomalous Accounts (Problem Cases)</h3>
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-700"><span className="font-semibold">{comparativeAnalysis.anomalyAccountPercentage}%</span> of accounts</p>
+                  <p className="text-sm text-gray-700"><span className="font-semibold">{comparativeAnalysis.anomalyConsumptionPercentage}%</span> of consumption</p>
+                  <p className="text-sm text-gray-700"><span className="font-semibold">{comparativeAnalysis.anomalyRevenuePercentage}%</span> of revenue</p>
+                  <p className="text-xs text-gray-600 mt-2">Avg: {comparativeAnalysis.totalConsumption > 0 ? (comparativeAnalysis.anomalousConsumption / comparativeAnalysis.anomalousAccounts).toFixed(1) : 0} cu.m/account</p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
         )}
 
         {/* Consumption Analytics Tab */}

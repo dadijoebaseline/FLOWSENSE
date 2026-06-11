@@ -839,4 +839,248 @@ export const staticDataService = {
       avgRevenuePerAccount: totalAccounts > 0 ? Math.round((totalRevenue / totalAccounts) * 100) / 100 : 0,
     };
   },
+
+  /**
+   * Comparative Analysis: Dataset vs Anomalies
+   * Returns metrics comparing normal accounts to anomalous accounts
+   * Per Master Prompt requirement: "% of accounts affected, consumption %, revenue %"
+   * @returns {Promise<Object>} Comparative metrics
+   */
+  async getAnomalyComparativeAnalysis() {
+    const allAccounts = await loadAllAccounts();
+    const anomalies = await this.getAnomalies();
+
+    // Build set of anomalous account IDs
+    const anomalousIds = new Set(anomalies.map(a => a.accountNumber || a.accountId));
+
+    let totalConsumption = 0;
+    let anomalousConsumption = 0;
+    let totalRevenue = 0;
+    let anomalousRevenue = 0;
+    let totalAccounts = 0;
+    let anomalousAccounts = 0;
+
+    for (const account of allAccounts) {
+      if (!account.accountId) continue;
+
+      const consumption = Number(account.cumUsed) || 0;
+      const revenue = Number(account.billAmount) || 0;
+
+      totalConsumption += consumption;
+      totalRevenue += revenue;
+      totalAccounts += 1;
+
+      if (anomalousIds.has(account.accountId)) {
+        anomalousConsumption += consumption;
+        anomalousRevenue += revenue;
+        anomalousAccounts += 1;
+      }
+    }
+
+    const normalConsumption = totalConsumption - anomalousConsumption;
+    const normalRevenue = totalRevenue - anomalousRevenue;
+    const normalAccounts = totalAccounts - anomalousAccounts;
+
+    return {
+      // Account Impact
+      totalAccounts,
+      anomalousAccounts,
+      normalAccounts,
+      anomalyAccountPercentage: totalAccounts > 0 ? Math.round((anomalousAccounts / totalAccounts) * 10000) / 100 : 0,
+      normalAccountPercentage: totalAccounts > 0 ? Math.round((normalAccounts / totalAccounts) * 10000) / 100 : 0,
+
+      // Consumption Impact
+      totalConsumption: Math.round(totalConsumption * 100) / 100,
+      anomalousConsumption: Math.round(anomalousConsumption * 100) / 100,
+      normalConsumption: Math.round(normalConsumption * 100) / 100,
+      anomalyConsumptionPercentage: totalConsumption > 0 ? Math.round((anomalousConsumption / totalConsumption) * 10000) / 100 : 0,
+      normalConsumptionPercentage: totalConsumption > 0 ? Math.round((normalConsumption / totalConsumption) * 10000) / 100 : 0,
+
+      // Revenue Impact
+      totalRevenue: Math.round(totalRevenue * 100) / 100,
+      anomalousRevenue: Math.round(anomalousRevenue * 100) / 100,
+      normalRevenue: Math.round(normalRevenue * 100) / 100,
+      anomalyRevenuePercentage: totalRevenue > 0 ? Math.round((anomalousRevenue / totalRevenue) * 10000) / 100 : 0,
+      normalRevenuePercentage: totalRevenue > 0 ? Math.round((normalRevenue / totalRevenue) * 10000) / 100 : 0,
+
+      // Status Breakdown (Anomaly prevalence by status)
+      anomalyRateByStatus: await this._getAnomalyRateByStatus(allAccounts, anomalousIds),
+
+      // Classification Breakdown (Anomaly prevalence by classification)
+      anomalyRateByClassification: await this._getAnomalyRateByClassification(allAccounts, anomalousIds),
+    };
+  },
+
+  /**
+   * Calculate anomaly prevalence by status (ACTIVE, DISCONNECTED, etc)
+   * @private
+   */
+  async _getAnomalyRateByStatus(allAccounts, anomalousIds) {
+    const statuses = {};
+
+    for (const account of allAccounts) {
+      if (!account.accountId || !account.status) continue;
+
+      const status = account.status;
+      if (!statuses[status]) {
+        statuses[status] = { total: 0, anomalous: 0 };
+      }
+
+      statuses[status].total += 1;
+      if (anomalousIds.has(account.accountId)) {
+        statuses[status].anomalous += 1;
+      }
+    }
+
+    const result = {};
+    for (const status in statuses) {
+      const data = statuses[status];
+      result[status] = {
+        total: data.total,
+        anomalous: data.anomalous,
+        normal: data.total - data.anomalous,
+        anomalyRate: data.total > 0 ? Math.round((data.anomalous / data.total) * 10000) / 100 : 0,
+      };
+    }
+
+    return result;
+  },
+
+  /**
+   * Calculate anomaly prevalence by classification (rateCode)
+   * @private
+   */
+  async _getAnomalyRateByClassification(allAccounts, anomalousIds) {
+    const classifications = {};
+
+    for (const account of allAccounts) {
+      if (!account.accountId || !account.rateCode) continue;
+
+      const rateCode = account.rateCode;
+      if (!classifications[rateCode]) {
+        classifications[rateCode] = { total: 0, anomalous: 0 };
+      }
+
+      classifications[rateCode].total += 1;
+      if (anomalousIds.has(account.accountId)) {
+        classifications[rateCode].anomalous += 1;
+      }
+    }
+
+    const result = {};
+    for (const rateCode in classifications) {
+      const data = classifications[rateCode];
+      result[rateCode] = {
+        total: data.total,
+        anomalous: data.anomalous,
+        normal: data.total - data.anomalous,
+        anomalyRate: data.total > 0 ? Math.round((data.anomalous / data.total) * 10000) / 100 : 0,
+      };
+    }
+
+    return result;
+  },
+
+  /**
+   * Get comprehensive data distribution analysis
+   * Includes status distribution, classification distribution, consumption ranges
+   * @returns {Promise<Object>} Distribution metrics
+   */
+  async getDataDistribution() {
+    const allAccounts = await loadAllAccounts();
+
+    // Status distribution
+    const statusCounts = {};
+    const statusConsumption = {};
+    const statusRevenue = {};
+
+    // Classification distribution
+    const classificationCounts = {};
+    const classificationConsumption = {};
+    const classificationRevenue = {};
+
+    // Consumption distribution (for quartiles)
+    const consumptionValues = [];
+    const revenueValues = [];
+
+    for (const account of allAccounts) {
+      if (!account.accountId) continue;
+
+      const consumption = Number(account.cumUsed) || 0;
+      const revenue = Number(account.billAmount) || 0;
+
+      // Track for quartiles
+      consumptionValues.push(consumption);
+      revenueValues.push(revenue);
+
+      // Status tracking
+      if (account.status) {
+        statusCounts[account.status] = (statusCounts[account.status] || 0) + 1;
+        statusConsumption[account.status] = (statusConsumption[account.status] || 0) + consumption;
+        statusRevenue[account.status] = (statusRevenue[account.status] || 0) + revenue;
+      }
+
+      // Classification tracking
+      if (account.rateCode) {
+        classificationCounts[account.rateCode] = (classificationCounts[account.rateCode] || 0) + 1;
+        classificationConsumption[account.rateCode] = (classificationConsumption[account.rateCode] || 0) + consumption;
+        classificationRevenue[account.rateCode] = (classificationRevenue[account.rateCode] || 0) + revenue;
+      }
+    }
+
+    // Calculate quartiles
+    const sortedConsumption = consumptionValues.sort((a, b) => a - b);
+    const sortedRevenue = revenueValues.sort((a, b) => a - b);
+
+    const getQuartile = (sorted, q) => {
+      const idx = Math.floor(sorted.length * q);
+      return sorted[idx] || 0;
+    };
+
+    return {
+      // Status Distribution
+      statusDistribution: Object.entries(statusCounts).map(([status, count]) => ({
+        status,
+        count,
+        percentage: (count / allAccounts.length) * 100,
+        totalConsumption: Math.round(statusConsumption[status] * 100) / 100,
+        totalRevenue: Math.round(statusRevenue[status] * 100) / 100,
+        avgConsumption: count > 0 ? Math.round((statusConsumption[status] / count) * 100) / 100 : 0,
+        avgRevenue: count > 0 ? Math.round((statusRevenue[status] / count) * 100) / 100 : 0,
+      })),
+
+      // Classification Distribution
+      classificationDistribution: Object.entries(classificationCounts).map(([rateCode, count]) => ({
+        rateCode,
+        count,
+        percentage: (count / allAccounts.length) * 100,
+        totalConsumption: Math.round(classificationConsumption[rateCode] * 100) / 100,
+        totalRevenue: Math.round(classificationRevenue[rateCode] * 100) / 100,
+        avgConsumption: count > 0 ? Math.round((classificationConsumption[rateCode] / count) * 100) / 100 : 0,
+        avgRevenue: count > 0 ? Math.round((classificationRevenue[rateCode] / count) * 100) / 100 : 0,
+      })),
+
+      // Consumption Distribution (Quartiles)
+      consumptionDistribution: {
+        min: sortedConsumption[0] || 0,
+        q1: getQuartile(sortedConsumption, 0.25),
+        median: getQuartile(sortedConsumption, 0.5),
+        q3: getQuartile(sortedConsumption, 0.75),
+        max: sortedConsumption[sortedConsumption.length - 1] || 0,
+        mean: sortedConsumption.reduce((a, b) => a + b, 0) / sortedConsumption.length,
+      },
+
+      // Revenue Distribution (Quartiles)
+      revenueDistribution: {
+        min: sortedRevenue[0] || 0,
+        q1: getQuartile(sortedRevenue, 0.25),
+        median: getQuartile(sortedRevenue, 0.5),
+        q3: getQuartile(sortedRevenue, 0.75),
+        max: sortedRevenue[sortedRevenue.length - 1] || 0,
+        mean: sortedRevenue.reduce((a, b) => a + b, 0) / sortedRevenue.length,
+      },
+
+      totalAccounts: allAccounts.length,
+    };
+  },
 };
