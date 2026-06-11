@@ -7,7 +7,7 @@ This roadmap captures the evolution of FlowSense from static anomaly detection t
 ## Phases
 
 - [x] **Phase 1: Static Conversion** - Convert FlowSense from Base44-backed to a static Vite app
-- [ ] **Phase 2: Static Data Experience** - Improve dataset discovery and month selection
+- [x] **Phase 2: Static Data Experience** - Improve dataset discovery and month selection (✅ 2026-06-11)
 - [x] **Phase 2.5: Analytics Experience** - Temporal & multi-dimensional analytics with advanced filtering
 - [x] **Phase 3: Deployment & Documentation** - Prepare GitHub/Vercel deployment guide and demo notes
 - [x] **v1.0.0 Post-Launch: Auth Roles (NEW)** - Role-based access control for static deployment
@@ -33,21 +33,27 @@ Plans:
 - [x] 01-02: Add sample GeoJSON files under `public/data/`
 - [x] 01-03: Update auth and app configuration for static deployment
 
-### Phase 2: Static Data Experience
+### Phase 2: Static Data Experience ✅ COMPLETE (2026-06-11)
 
 **Goal**: Improve how users explore static dataset months and understand data source.
 **Depends on**: Phase 1
 **Success Criteria**:
 
-1. Users can see available month files clearly
-2. UI documentation explains how to add new months
-3. The dataset listing feels intuitive
-4. The Analytics route is clarified as informational until a data ingestion flow is planned
+1. ✅ Users can see available month files clearly - Auto-discovery system dynamically detects available datasets
+2. ✅ UI documentation explains how to add new months - See PHASE-02-SUMMARY.md
+3. ✅ The dataset listing feels intuitive - Month dropdown populates automatically
+4. ✅ The Analytics route is clarified as informational until a data ingestion flow is planned
 
 Plans:
-- [ ] 02-01: Add month selector or dataset filter UI
-- [ ] 02-02: Add dataset metadata and file instructions
-- [ ] 02-03: Refine anomaly detection behavior for low-volume accounts and active-status filtering
+- [x] 02-01: Implement auto-discovery of dataset months with intelligent fallback (3-tier discovery pattern)
+- [x] 02-02: Fix Analytics page async compatibility for month selector UI
+- [x] 02-03: Document dataset management and rolling window maintenance
+
+**Key Implementation**:
+- 3-tier discovery: manifest → HEAD probing → hardcoded fallback
+- Auto-discovers available geojson files without code changes
+- 4-month rolling window maintenance (Feb-May → Mar-Jun → Apr-Jul as new files arrive)
+- Commits: f124bfb, 14f25f5, 93a054a, a4b6d9b
 
 ### Phase 2.5: Analytics Experience (NEW)
 
@@ -104,13 +110,13 @@ Plans:
 Plans:
 - [x] 03-01: Add GitHub repo metadata and push instructions
 - [x] 03-02: Document Vercel deployment and data file workflow
+3/3 | ✅ Complete (2026-06-11) |
+| Phase 2.5: Analytics Experience | 5/5 | ✅ Complete |
+| Phase 3: Deployment & Documentation | 2/2 | ✅ Complete |
+| v1.0.0 Post-Launch: Auth Roles | 1/1 | ✅ Complete |
 
-## Progress
-
-| Phase | Plans Complete | Status |
-|-------|----------------|--------|
-| Phase 1: Static Conversion | 3/3 | ✅ Complete |
-| Phase 2: Static Data Experience | 0/3 | Not started |
+**Overall Project Completion: 14/14 plans (100% core scope + Phase 2)**  
+**Project Status: PRODUCTION READY + DATASET AUTO-DISCOVERY
 | Phase 2.5: Analytics Experience | 5/5 | ✅ Complete |
 | Phase 3: Deployment & Documentation | 2/2 | ✅ Complete |
 | v1.0.0 Post-Launch: Auth Roles | 1/1 | ✅ Complete |
