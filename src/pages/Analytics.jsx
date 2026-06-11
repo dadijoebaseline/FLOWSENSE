@@ -166,13 +166,35 @@ export default function Analytics() {
     return filtered;
   }, [allAccounts, applyFilters, selectedMonth]);
 
-  // Fetch KPI metrics for selected month
-  const { data: kpiMetrics, isLoading: isLoadingKPI, error: errorKPI } = useQuery({
-    queryKey: ['kpiMetrics', selectedMonth],
-    queryFn: () => staticDataService.getKPIMetrics(selectedMonth || undefined),
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    enabled: !!selectedMonth,
-  });
+  // Fetch KPI metrics for selected month AND filtered accounts
+  const kpiMetrics = useMemo(() => {
+    if (!filteredAccounts || filteredAccounts.length === 0) return null;
+
+    let totalConsumption = 0;
+    let totalRevenue = 0;
+    let activeCount = 0;
+    let disconnectedCount = 0;
+
+    for (const account of filteredAccounts) {
+      totalConsumption += Number(account.cumUsed) || 0;
+      totalRevenue += Number(account.billAmount) || 0;
+      if (account.status === 'ACTIVE') activeCount += 1;
+      if (account.status === 'DISCONNECTED') disconnectedCount += 1;
+    }
+
+    return {
+      totalConsumption: Math.round(totalConsumption * 100) / 100,
+      totalRevenue: Math.round(totalRevenue * 100) / 100,
+      totalAccounts: filteredAccounts.length,
+      activeCount,
+      disconnectedCount,
+      avgConsumptionPerAccount: filteredAccounts.length > 0 ? Math.round((totalConsumption / filteredAccounts.length) * 100) / 100 : 0,
+      avgRevenuePerAccount: filteredAccounts.length > 0 ? Math.round((totalRevenue / filteredAccounts.length) * 100) / 100 : 0,
+      month: selectedMonth || 'all',
+    };
+  }, [filteredAccounts, selectedMonth]);
+
+  const isLoadingKPI = !kpiMetrics;
 
   // Fetch monthly account metrics (per-month, not summed)
   const { data: monthlyMetrics = [], isLoading: isLoadingMonthly } = useQuery({
@@ -181,23 +203,209 @@ export default function Analytics() {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  // Fetch comparative analysis (anomaly impact metrics)
-  // NOTE: This query IS affected by selectedMonth filter
-  // It shows anomaly impact for the currently selected month only
-  const { data: comparativeAnalysis, isLoading: isLoadingComparative } = useQuery({
-    queryKey: ['comparativeAnalysis', selectedMonth],
-    queryFn: () => staticDataService.getAnomalyComparativeAnalysis(selectedMonth),
+  // Fetch anomalies once
+  const { data: anomalies = [] } = useQuery({
+    queryKey: ['anomalies'],
+    queryFn: () => staticDataService.getAnomalies(),
     staleTime: 5 * 60 * 1000, // 5 minutes
-    enabled: !!selectedMonth,
   });
 
-  // Fetch data distribution metrics for selected month
-  const { data: dataDistribution, isLoading: isLoadingDistribution } = useQuery({
-    queryKey: ['dataDistribution', selectedMonth],
-    queryFn: () => staticDataService.getDataDistribution(selectedMonth || undefined),
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    enabled: !!selectedMonth,
-  });
+  // Compute comparative analysis (anomaly impact) from filtered accounts AND anomalies
+  const comparativeAnalysis = useMemo(() => {
+    if (!filteredAccounts || filteredAccounts.length === 0 || !anomalies) return null;
+
+    const anomalousIds = new Set(anomalies.map(a => a.accountNumber || a.accountId));
+
+    let totalConsumption = 0;
+    let anomalousConsumption = 0;
+    let totalRevenue = 0;
+    let anomalousRevenue = 0;
+    let anomalousAccounts = 0;
+
+    // Aggregate metrics for filtered accounts only
+    for (const account of filteredAccounts) {
+      if (!account.accountId) continue;
+
+      const consumption = Number(account.cumUsed) || 0;
+      const revenue = Number(account.billAmount) || 0;
+
+      totalConsumption += consumption;
+      totalRevenue += revenue;
+
+      if (anomalousIds.has(account.accountId)) {
+        anomalousConsumption += consumption;
+        anomalousRevenue += revenue;
+        anomalousAccounts += 1;
+      }
+    }
+
+    const normalConsumption = totalConsumption - anomalousConsumption;
+    const normalRevenue = totalRevenue - anomalousRevenue;
+    const normalAccounts = filteredAccounts.length - anomalousAccounts;
+
+    // Build status breakdown
+    const statuses = {};
+    for (const account of filteredAccounts) {
+      if (!account.accountId || !account.status) continue;
+      const status = account.status;
+      if (!statuses[status]) {
+        statuses[status] = { total: 0, anomalous: 0 };
+      }
+      statuses[status].total += 1;
+      if (anomalousIds.has(account.accountId)) {
+        statuses[status].anomalous += 1;
+      }
+    }
+
+    const anomalyRateByStatus = {};
+    for (const status in statuses) {
+      const data = statuses[status];
+      anomalyRateByStatus[status] = {
+        total: data.total,
+        anomalous: data.anomalous,
+        normal: data.total - data.anomalous,
+        anomalyRate: data.total > 0 ? Math.round((data.anomalous / data.total) * 10000) / 100 : 0,
+      };
+    }
+
+    // Build classification breakdown
+    const classifications = {};
+    for (const account of filteredAccounts) {
+      if (!account.accountId || !account.rateCode) continue;
+      const rateCode = account.rateCode;
+      if (!classifications[rateCode]) {
+        classifications[rateCode] = { total: 0, anomalous: 0 };
+      }
+      classifications[rateCode].total += 1;
+      if (anomalousIds.has(account.accountId)) {
+        classifications[rateCode].anomalous += 1;
+      }
+    }
+
+    const anomalyRateByClassification = {};
+    for (const rateCode in classifications) {
+      const data = classifications[rateCode];
+      anomalyRateByClassification[rateCode] = {
+        total: data.total,
+        anomalous: data.anomalous,
+        normal: data.total - data.anomalous,
+        anomalyRate: data.total > 0 ? Math.round((data.anomalous / data.total) * 10000) / 100 : 0,
+      };
+    }
+
+    return {
+      totalAccounts: filteredAccounts.length,
+      anomalousAccounts,
+      normalAccounts,
+      anomalyAccountPercentage: filteredAccounts.length > 0 ? Math.round((anomalousAccounts / filteredAccounts.length) * 10000) / 100 : 0,
+      normalAccountPercentage: filteredAccounts.length > 0 ? Math.round((normalAccounts / filteredAccounts.length) * 10000) / 100 : 0,
+
+      totalConsumption: Math.round(totalConsumption * 100) / 100,
+      anomalousConsumption: Math.round(anomalousConsumption * 100) / 100,
+      normalConsumption: Math.round(normalConsumption * 100) / 100,
+      anomalyConsumptionPercentage: totalConsumption > 0 ? Math.round((anomalousConsumption / totalConsumption) * 10000) / 100 : 0,
+      normalConsumptionPercentage: totalConsumption > 0 ? Math.round((normalConsumption / totalConsumption) * 10000) / 100 : 0,
+
+      totalRevenue: Math.round(totalRevenue * 100) / 100,
+      anomalousRevenue: Math.round(anomalousRevenue * 100) / 100,
+      normalRevenue: Math.round(normalRevenue * 100) / 100,
+      anomalyRevenuePercentage: totalRevenue > 0 ? Math.round((anomalousRevenue / totalRevenue) * 10000) / 100 : 0,
+      normalRevenuePercentage: totalRevenue > 0 ? Math.round((normalRevenue / totalRevenue) * 10000) / 100 : 0,
+
+      anomalyRateByStatus,
+      anomalyRateByClassification,
+    };
+  }, [filteredAccounts, anomalies]);
+
+  const isLoadingComparative = !comparativeAnalysis;
+
+  // Compute data distribution from filtered accounts
+  const dataDistribution = useMemo(() => {
+    if (!filteredAccounts || filteredAccounts.length === 0) return null;
+
+    const statusCounts = {};
+    const statusConsumption = {};
+    const statusRevenue = {};
+    const classificationCounts = {};
+    const classificationConsumption = {};
+    const classificationRevenue = {};
+    const consumptionValues = [];
+    const revenueValues = [];
+
+    for (const account of filteredAccounts) {
+      if (!account.accountId) continue;
+
+      const consumption = Number(account.cumUsed) || 0;
+      const revenue = Number(account.billAmount) || 0;
+
+      consumptionValues.push(consumption);
+      revenueValues.push(revenue);
+
+      if (account.status) {
+        statusCounts[account.status] = (statusCounts[account.status] || 0) + 1;
+        statusConsumption[account.status] = (statusConsumption[account.status] || 0) + consumption;
+        statusRevenue[account.status] = (statusRevenue[account.status] || 0) + revenue;
+      }
+
+      if (account.rateCode) {
+        classificationCounts[account.rateCode] = (classificationCounts[account.rateCode] || 0) + 1;
+        classificationConsumption[account.rateCode] = (classificationConsumption[account.rateCode] || 0) + consumption;
+        classificationRevenue[account.rateCode] = (classificationRevenue[account.rateCode] || 0) + revenue;
+      }
+    }
+
+    const sortedConsumption = consumptionValues.sort((a, b) => a - b);
+    const sortedRevenue = revenueValues.sort((a, b) => a - b);
+
+    const getQuartile = (sorted, q) => {
+      const idx = Math.floor(sorted.length * q);
+      return sorted[idx] || 0;
+    };
+
+    return {
+      statusDistribution: Object.entries(statusCounts).map(([status, count]) => ({
+        status,
+        count,
+        percentage: (count / filteredAccounts.length) * 100,
+        totalConsumption: Math.round(statusConsumption[status] * 100) / 100,
+        totalRevenue: Math.round(statusRevenue[status] * 100) / 100,
+        avgConsumption: count > 0 ? Math.round((statusConsumption[status] / count) * 100) / 100 : 0,
+        avgRevenue: count > 0 ? Math.round((statusRevenue[status] / count) * 100) / 100 : 0,
+      })),
+
+      classificationDistribution: Object.entries(classificationCounts).map(([rateCode, count]) => ({
+        rateCode,
+        count,
+        percentage: (count / filteredAccounts.length) * 100,
+        totalConsumption: Math.round(classificationConsumption[rateCode] * 100) / 100,
+        totalRevenue: Math.round(classificationRevenue[rateCode] * 100) / 100,
+        avgConsumption: count > 0 ? Math.round((classificationConsumption[rateCode] / count) * 100) / 100 : 0,
+        avgRevenue: count > 0 ? Math.round((classificationRevenue[rateCode] / count) * 100) / 100 : 0,
+      })),
+
+      consumptionDistribution: {
+        min: sortedConsumption[0] || 0,
+        q1: getQuartile(sortedConsumption, 0.25),
+        median: getQuartile(sortedConsumption, 0.5),
+        q3: getQuartile(sortedConsumption, 0.75),
+        max: sortedConsumption[sortedConsumption.length - 1] || 0,
+        mean: sortedConsumption.reduce((a, b) => a + b, 0) / sortedConsumption.length,
+      },
+
+      revenueDistribution: {
+        min: sortedRevenue[0] || 0,
+        q1: getQuartile(sortedRevenue, 0.25),
+        median: getQuartile(sortedRevenue, 0.5),
+        q3: getQuartile(sortedRevenue, 0.75),
+        max: sortedRevenue[sortedRevenue.length - 1] || 0,
+        mean: sortedRevenue.reduce((a, b) => a + b, 0) / sortedRevenue.length,
+      },
+
+      totalAccounts: filteredAccounts.length,
+    };
+  }, [filteredAccounts]);
+
+  const isLoadingDistribution = !dataDistribution;
 
   const kpiData = useMemo(
     () =>
