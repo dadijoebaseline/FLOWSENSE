@@ -1,7 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { auth, googleProvider, firestore } from './firebase.js';
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 
 const AuthContext = createContext();
 
@@ -14,10 +14,23 @@ const getRoleFromEmail = (email) => (normalizeEmail(email) === ADMIN_EMAIL ? 'ad
 const getRoleFromFirestore = async (userEmail) => {
   try {
     const normalizedEmail = normalizeEmail(userEmail);
+    
+    // First, try to fetch by normalized email as document ID
     const userRef = doc(firestore, 'flowsense_users', normalizedEmail);
     const userSnap = await getDoc(userRef);
     if (userSnap.exists()) {
       const userData = userSnap.data();
+      if (userData.role && ['admin', 'manager', 'viewer'].includes(userData.role)) {
+        return userData.role;
+      }
+    }
+    
+    // Fallback: query collection for matching email field
+    const usersCollection = collection(firestore, 'flowsense_users');
+    const q = query(usersCollection, where('email', '==', normalizedEmail));
+    const snapshot = await getDocs(q);
+    if (snapshot.size > 0) {
+      const userData = snapshot.docs[0].data();
       if (userData.role && ['admin', 'manager', 'viewer'].includes(userData.role)) {
         return userData.role;
       }
