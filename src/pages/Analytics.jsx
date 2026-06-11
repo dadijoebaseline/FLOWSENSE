@@ -128,11 +128,12 @@ export default function Analytics() {
 
   // Load available months
   useEffect(() => {
-    const months = staticDataService.getAvailableMonths();
-    setMonthOptions(months);
-    if (months.length > 0 && !selectedMonth) {
-      setSelectedMonth(months[months.length - 1]); // Default to latest month
-    }
+    staticDataService.getAvailableMonths().then((months) => {
+      setMonthOptions(months);
+      if (months.length > 0 && !selectedMonth) {
+        setSelectedMonth(months[months.length - 1]); // Default to latest month
+      }
+    });
   }, [selectedMonth]);
 
   // Fetch all accounts with proper parsing and normalization
